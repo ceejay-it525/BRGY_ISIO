@@ -4,12 +4,16 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class StudentModel extends Model
+class ClearanceModel extends Model
 {
-    protected $table = 'student';
+    protected $table      = 'clearances';
     protected $primaryKey = 'id';
 
-    protected $allowedFields = ['name','bday', 'address'];
+    protected $allowedFields = [
+        'control_no', 'resident_id', 'resident_name', 'purpose',
+        'issued_date', 'valid_until', 'issued_by', 'or_number',
+        'amount', 'status', 'created_at', 'updated_at', 'deleted_at'
+    ];
 
     public function getRecords($start, $length, $searchValue = '')
     {
@@ -18,11 +22,12 @@ class StudentModel extends Model
 
         if (!empty($searchValue)) {
             $builder->groupStart()
-                ->orLike('name', $searchValue)
+                ->like('control_no', $searchValue)
+                ->orLike('resident_name', $searchValue)
+                ->orLike('purpose', $searchValue)
                 ->groupEnd();
         }
 
-        // Clone builder for filtered count before applying limit
         $filteredBuilder = clone $builder;
         $filteredRecords = $filteredBuilder->countAllResults();
 

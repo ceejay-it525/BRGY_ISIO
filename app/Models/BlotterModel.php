@@ -4,12 +4,16 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class ProfilingModel extends Model
+class BlotterModel extends Model
 {
-    protected $table = 'profiling';
+    protected $table      = 'blotter';
     protected $primaryKey = 'id';
 
-    protected $allowedFields = ['name','bday', 'address'];
+    protected $allowedFields = [
+        'case_no', 'complainant', 'respondent', 'incident_type',
+        'incident_date', 'incident_place', 'narrative', 'action_taken',
+        'status', 'settled_date', 'created_at', 'updated_at', 'deleted_at'
+    ];
 
     public function getRecords($start, $length, $searchValue = '')
     {
@@ -18,11 +22,13 @@ class ProfilingModel extends Model
 
         if (!empty($searchValue)) {
             $builder->groupStart()
-                ->orLike('name', $searchValue)
+                ->like('case_no', $searchValue)
+                ->orLike('complainant', $searchValue)
+                ->orLike('respondent', $searchValue)
+                ->orLike('incident_type', $searchValue)
                 ->groupEnd();
         }
 
-        // Clone builder for filtered count before applying limit
         $filteredBuilder = clone $builder;
         $filteredRecords = $filteredBuilder->countAllResults();
 

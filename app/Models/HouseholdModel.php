@@ -4,12 +4,16 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class PersonModel extends Model
+class HouseholdModel extends Model
 {
-    protected $table = 'person';
+    protected $table      = 'households';
     protected $primaryKey = 'id';
 
-    protected $allowedFields = ['name','bday'];
+    protected $allowedFields = [
+        'household_no', 'head_of_family', 'purok', 'address',
+        'contact_number', 'total_members', 'house_ownership',
+        'status', 'created_at', 'updated_at', 'deleted_at'
+    ];
 
     public function getRecords($start, $length, $searchValue = '')
     {
@@ -18,11 +22,13 @@ class PersonModel extends Model
 
         if (!empty($searchValue)) {
             $builder->groupStart()
-                ->orLike('name', $searchValue)
+                ->like('household_no', $searchValue)
+                ->orLike('head_of_family', $searchValue)
+                ->orLike('purok', $searchValue)
+                ->orLike('address', $searchValue)
                 ->groupEnd();
         }
 
-        // Clone builder for filtered count before applying limit
         $filteredBuilder = clone $builder;
         $filteredRecords = $filteredBuilder->countAllResults();
 
