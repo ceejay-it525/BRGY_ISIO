@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.1deb1
+-- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Host: localhost:3306
--- Generation Time: Jul 21, 2025 at 12:33 PM
--- Server version: 10.11.9-MariaDB-0+deb12u1
--- PHP Version: 8.2.26
+-- Host: 127.0.0.1
+-- Generation Time: Apr 25, 2026 at 01:13 AM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -20,6 +20,134 @@ SET time_zone = "+00:00";
 --
 -- Database: `crud_db`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `barangay_officials`
+--
+
+CREATE TABLE `barangay_officials` (
+  `id` int(11) NOT NULL,
+  `first_name` varchar(100) DEFAULT NULL,
+  `middle_name` varchar(100) DEFAULT NULL,
+  `last_name` varchar(100) DEFAULT NULL,
+  `position` varchar(100) DEFAULT NULL,
+  `term_start` date DEFAULT NULL,
+  `term_end` date DEFAULT NULL,
+  `contact_number` varchar(50) DEFAULT NULL,
+  `email` varchar(150) DEFAULT NULL,
+  `address` text DEFAULT NULL,
+  `status` varchar(50) DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `blotter`
+--
+
+CREATE TABLE `blotter` (
+  `id` int(11) NOT NULL,
+  `complainant_id` int(11) DEFAULT NULL,
+  `respondent_id` int(11) DEFAULT NULL,
+  `complaint_type` varchar(150) DEFAULT NULL,
+  `complaint_details` text DEFAULT NULL,
+  `status` varchar(50) DEFAULT NULL,
+  `date_incident` date DEFAULT NULL,
+  `resolution_notes` text DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `business_permits`
+--
+
+CREATE TABLE `business_permits` (
+  `id` int(11) NOT NULL,
+  `business_name` varchar(150) DEFAULT NULL,
+  `owner_name` varchar(150) DEFAULT NULL,
+  `owner_resident_id` int(11) DEFAULT NULL,
+  `business_address` text DEFAULT NULL,
+  `business_type` varchar(100) DEFAULT NULL,
+  `permit_type` varchar(100) DEFAULT NULL,
+  `issue_date` date DEFAULT NULL,
+  `expiry_date` date DEFAULT NULL,
+  `status` varchar(50) DEFAULT NULL,
+  `fees_paid` decimal(10,2) DEFAULT 0.00,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `clearances`
+--
+
+CREATE TABLE `clearances` (
+  `id` int(11) NOT NULL,
+  `resident_id` int(11) DEFAULT NULL,
+  `clearance_type` varchar(100) DEFAULT NULL,
+  `purpose` text DEFAULT NULL,
+  `date_issued` date DEFAULT NULL,
+  `valid_until` date DEFAULT NULL,
+  `status` varchar(50) DEFAULT NULL,
+  `remarks` text DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `households`
+--
+
+CREATE TABLE `households` (
+  `id` int(11) NOT NULL,
+  `head_name` varchar(150) DEFAULT NULL,
+  `address_line1` text DEFAULT NULL,
+  `address_line2` text DEFAULT NULL,
+  `barangay` varchar(100) DEFAULT NULL,
+  `city_municipality` varchar(100) DEFAULT NULL,
+  `province` varchar(100) DEFAULT NULL,
+  `zip_code` varchar(20) DEFAULT NULL,
+  `total_members` int(11) DEFAULT 1,
+  `status` varchar(50) DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `indigents`
+--
+
+CREATE TABLE `indigents` (
+  `id` int(11) NOT NULL,
+  `resident_id` int(11) DEFAULT NULL,
+  `indigency_category` varchar(100) DEFAULT NULL,
+  `assistance_type` varchar(100) DEFAULT NULL,
+  `assistance_amount` decimal(10,2) DEFAULT NULL,
+  `date_assessed` date DEFAULT NULL,
+  `date_provided` date DEFAULT NULL,
+  `status` varchar(50) DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -41,6 +169,32 @@ CREATE TABLE `login_attempts` (
 
 INSERT INTO `login_attempts` (`id`, `email`, `ip_address`, `attempt_time`, `user_agent`) VALUES
 (36, 'glennazuelo1@gmail.com', '::142432432', '2025-04-15 13:15:00', '');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `residents`
+--
+
+CREATE TABLE `residents` (
+  `id` int(11) NOT NULL,
+  `first_name` varchar(100) DEFAULT NULL,
+  `middle_name` varchar(100) DEFAULT NULL,
+  `last_name` varchar(100) DEFAULT NULL,
+  `suffix` varchar(50) DEFAULT NULL,
+  `birthdate` date DEFAULT NULL,
+  `gender` varchar(20) DEFAULT NULL,
+  `civil_status` varchar(50) DEFAULT NULL,
+  `is_voter` tinyint(1) DEFAULT 0,
+  `voter_id` varchar(100) DEFAULT NULL,
+  `household_id` int(11) DEFAULT NULL,
+  `address_line1` text DEFAULT NULL,
+  `barangay` varchar(100) DEFAULT NULL,
+  `status` varchar(50) DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -113,9 +267,56 @@ INSERT INTO `users` (`id`, `uuid`, `email`, `password`, `role`, `status`, `name`
 --
 
 --
+-- Indexes for table `barangay_officials`
+--
+ALTER TABLE `barangay_officials`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `blotter`
+--
+ALTER TABLE `blotter`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `complainant_id` (`complainant_id`),
+  ADD KEY `respondent_id` (`respondent_id`);
+
+--
+-- Indexes for table `business_permits`
+--
+ALTER TABLE `business_permits`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `owner_resident_id` (`owner_resident_id`);
+
+--
+-- Indexes for table `clearances`
+--
+ALTER TABLE `clearances`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `resident_id` (`resident_id`);
+
+--
+-- Indexes for table `households`
+--
+ALTER TABLE `households`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `indigents`
+--
+ALTER TABLE `indigents`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `resident_id` (`resident_id`);
+
+--
 -- Indexes for table `login_attempts`
 --
 ALTER TABLE `login_attempts`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `residents`
+--
+ALTER TABLE `residents`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -137,10 +338,52 @@ ALTER TABLE `users`
 --
 
 --
+-- AUTO_INCREMENT for table `barangay_officials`
+--
+ALTER TABLE `barangay_officials`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `blotter`
+--
+ALTER TABLE `blotter`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `business_permits`
+--
+ALTER TABLE `business_permits`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `clearances`
+--
+ALTER TABLE `clearances`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `households`
+--
+ALTER TABLE `households`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `indigents`
+--
+ALTER TABLE `indigents`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `login_attempts`
 --
 ALTER TABLE `login_attempts`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=92;
+
+--
+-- AUTO_INCREMENT for table `residents`
+--
+ALTER TABLE `residents`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tbl_logs`
@@ -153,6 +396,35 @@ ALTER TABLE `tbl_logs`
 --
 ALTER TABLE `users`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `blotter`
+--
+ALTER TABLE `blotter`
+  ADD CONSTRAINT `blotter_ibfk_1` FOREIGN KEY (`complainant_id`) REFERENCES `residents` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `blotter_ibfk_2` FOREIGN KEY (`respondent_id`) REFERENCES `residents` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `business_permits`
+--
+ALTER TABLE `business_permits`
+  ADD CONSTRAINT `business_permits_ibfk_1` FOREIGN KEY (`owner_resident_id`) REFERENCES `residents` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `clearances`
+--
+ALTER TABLE `clearances`
+  ADD CONSTRAINT `clearances_ibfk_1` FOREIGN KEY (`resident_id`) REFERENCES `residents` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `indigents`
+--
+ALTER TABLE `indigents`
+  ADD CONSTRAINT `indigents_ibfk_1` FOREIGN KEY (`resident_id`) REFERENCES `residents` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

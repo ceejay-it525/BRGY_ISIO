@@ -99,16 +99,13 @@ body.dark-mode .main-sidebar .nav-link:hover {
                 </li>
 
                 <!-- Activity Logs -->
-                <li class="nav-item">
-                    <a href="<?= base_url('logs') ?>" class="nav-link <?= (uri_string() == 'logs') ? 'active' : '' ?>">
-                        <i class="nav-icon fas fa-history"></i>
-                        <p>
-                            <span>Activity Logs</span>
-                            <small class="d-block text-muted">System audit</small>
-                        </p>
-                    </a>
-                </li>
-
+                 </li>
+      <li class="nav-item">
+      <a href="<?= base_url('log') ?>" class="nav-link <?= is_active(1, 'log') ?>">
+        <i class="nav-icon fas fa-history"></i>
+        <p>Activity Logs</p>
+      </a>
+    </li>
                 <!-- USER ACCOUNTS - TOP LEVEL (PUT BACK) -->
                 <li class="nav-item">
                     <a href="<?= base_url('users') ?>" class="nav-link <?= (uri_string() == 'users') ? 'active' : '' ?>">

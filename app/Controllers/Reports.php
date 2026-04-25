@@ -2,141 +2,62 @@
 
 namespace App\Controllers;
 
-use App\Models\ReportsModel;
-use CodeIgniter\API\ResponseTrait;
+use CodeIgniter\Controller;
 
-class Reports extends BaseController
+class Reports extends Controller
 {
-    use ResponseTrait;
-
-    protected $reportsModel;
-
-    public function __construct()
-    {
-        $this->reportsModel = new ReportsModel();
-    }
-
     public function index()
     {
-        return view('reports/index');
-    }
+        $db = \Config\Database::connect();
 
-    public function fetchRecords()
-    {
-        $draw        = $this->request->getPost('draw');
-        $start       = $this->request->getPost('start');
-        $length      = $this->request->getPost('length');
-        $searchValue = $this->request->getPost('search')['value'];
-        $orderColumn = $this->request->getPost('order')[0]['column'];
-        $orderDir    = $this->request->getPost('order')[0]['dir'];
+        // Summary counts for dashboard cards
+        $data['total_residents']  = $db->table('residents')->countAll();
+        $data['total_households'] = $db->table('households')->countAll();
+        $data['total_officials']  = $db->table('barangay_officials')->where('status', 'Active')->countAll();
+        $data['total_blotter']    = $db->table('blotter')->countAll();
+        $data['total_clearances'] = $db->table('clearances')->countAll();
+        $data['total_permits']    = $db->table('business_permits')->countAll();
+        $data['total_indigents']  = $db->table('indigents')->countAll();
 
-        $result = $this->reportsModel->getRecords($start, $length, $searchValue, $orderColumn, $orderDir);
+        // Residents by gender
+        $data['residents_by_gender'] = $db->query(
+            "SELECT gender, COUNT(*) as total FROM residents GROUP BY gender"
+        )->getResultArray();
 
-        $counter = $start + 1;
-        foreach ($result['data'] as &$row) {
-            $row['row_number']   = $counter++;
-            $row['period_start'] = date('M d, Y', strtotime($row['period_start']));
-            $row['period_end']   = date('M d, Y', strtotime($row['period_end']));
-            $row['created_at']   = date('M d, Y', strtotime($row['created_at']));
-        }
+        // Residents by status
+        $data['residents_by_status'] = $db->query(
+            "SELECT status, COUNT(*) as total FROM residents GROUP BY status"
+        )->getResultArray();
 
-        return $this->respond([
-            'draw'            => $draw,
-            'recordsTotal'    => $result['recordsTotal'],
-            'recordsFiltered' => $result['recordsFiltered'],
-            'data'            => $result['data'],
-        ]);
-    }
+        // Blotter by type
+        $data['blotter_by_type'] = $db->query(
+            "SELECT complaint_type, COUNT(*) as total FROM blotter GROUP BY complaint_type ORDER BY total DESC LIMIT 5"
+        )->getResultArray();
 
-    public function save()
-    {
-        if (!$this->validate([
-            'title'        => 'required|min_length[3]',
-            'report_type'  => 'required|in_list[Blotter,Clearance,Permit,Demographic,Financial]',
-            'period_start' => 'required|valid_date',
-            'period_end'   => 'required|valid_date',
-        ])) {
-            return $this->failValidationErrors($this->validator->getErrors());
-        }
+        // Blotter by status
+        $data['blotter_by_status'] = $db->query(
+            "SELECT status, COUNT(*) as total FROM blotter GROUP BY status"
+        )->getResultArray();
 
-        $data = [
-            'title'        => $this->request->getPost('title'),
-            'report_type'  => $this->request->getPost('report_type'),
-            'description'  => $this->request->getPost('description'),
-            'period_start' => $this->request->getPost('period_start'),
-            'period_end'   => $this->request->getPost('period_end'),
-            'parameters'   => $this->request->getPost('parameters'),
-            'generated_by' => session('user_id'),
-            'status'       => 'Active',
-        ];
+        // Clearances issued per month (last 6 months)
+        $data['clearances_monthly'] = $db->query(
+            "SELECT DATE_FORMAT(date_issued, '%b %Y') AS month_label, COUNT(*) as total
+             FROM clearances
+             WHERE date_issued >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+             GROUP BY DATE_FORMAT(date_issued, '%Y-%m')
+             ORDER BY MIN(date_issued)"
+        )->getResultArray();
 
-        if ($this->reportsModel->insert($data)) {
-            return $this->respondCreated(['status' => 'success', 'message' => 'Report generated successfully']);
-        }
-        return $this->fail('Failed to generate report');
-    }
+        // Business permits by status
+        $data['permits_by_status'] = $db->query(
+            "SELECT status, COUNT(*) as total FROM business_permits GROUP BY status"
+        )->getResultArray();
 
-    public function edit($id)
-    {
-        $record = $this->reportsModel->find($id);
-        if ($record) return $this->respond($record);
-        return $this->failNotFound('Report not found');
-    }
+        // Indigents by category
+        $data['indigents_by_category'] = $db->query(
+            "SELECT indigency_category, COUNT(*) as total FROM indigents GROUP BY indigency_category"
+        )->getResultArray();
 
-    public function update($id)
-    {
-        if (!$this->validate([
-            'title'        => 'required|min_length[3]',
-            'report_type'  => 'required|in_list[Blotter,Clearance,Permit,Demographic,Financial]',
-            'period_start' => 'required|valid_date',
-            'period_end'   => 'required|valid_date',
-        ])) {
-            return $this->failValidationErrors($this->validator->getErrors());
-        }
-
-        $data = [
-            'title'        => $this->request->getPost('title'),
-            'report_type'  => $this->request->getPost('report_type'),
-            'description'  => $this->request->getPost('description'),
-            'period_start' => $this->request->getPost('period_start'),
-            'period_end'   => $this->request->getPost('period_end'),
-            'parameters'   => $this->request->getPost('parameters'),
-        ];
-
-        if ($this->reportsModel->update($id, $data)) {
-            return $this->respond(['status' => 'success', 'message' => 'Report updated successfully']);
-        }
-        return $this->fail('Failed to update report');
-    }
-
-    public function delete($id)
-    {
-        if ($this->reportsModel->delete($id)) {
-            return $this->respond(['status' => 'success', 'message' => 'Report deleted successfully']);
-        }
-        return $this->fail('Failed to delete report');
-    }
-
-    /* ---------- Live summary endpoints (used by report dashboard) ---------- */
-
-    public function blotterSummary()
-    {
-        $from = $this->request->getGet('from') ?: date('Y-m-01');
-        $to   = $this->request->getGet('to')   ?: date('Y-m-d');
-        return $this->respond($this->reportsModel->getBlotterSummary($from, $to));
-    }
-
-    public function clearanceSummary()
-    {
-        $from = $this->request->getGet('from') ?: date('Y-m-01');
-        $to   = $this->request->getGet('to')   ?: date('Y-m-d');
-        return $this->respond($this->reportsModel->getClearanceSummary($from, $to));
-    }
-
-    public function permitSummary()
-    {
-        $from = $this->request->getGet('from') ?: date('Y-m-01');
-        $to   = $this->request->getGet('to')   ?: date('Y-m-d');
-        return $this->respond($this->reportsModel->getPermitSummary($from, $to));
+        return view('reports/index', $data);
     }
 }

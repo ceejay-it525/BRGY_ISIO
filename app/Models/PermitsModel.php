@@ -4,15 +4,17 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class ClearanceModel extends Model
+class PermitsModel extends Model
 {
-    protected $table      = 'clearances';
+    protected $table      = 'business_permits';
     protected $primaryKey = 'id';
 
+    protected $useTimestamps = true;
+
     protected $allowedFields = [
-        'control_no', 'resident_id', 'resident_name', 'purpose',
-        'issued_date', 'valid_until', 'issued_by', 'or_number',
-        'amount', 'status', 'created_at', 'updated_at', 'deleted_at'
+        'business_name', 'owner_name', 'owner_resident_id', 'business_address',
+        'business_type', 'permit_type', 'issue_date', 'expiry_date',
+        'status', 'fees_paid',
     ];
 
     public function getRecords($start, $length, $searchValue = '')
@@ -22,9 +24,11 @@ class ClearanceModel extends Model
 
         if (!empty($searchValue)) {
             $builder->groupStart()
-                ->like('control_no', $searchValue)
-                ->orLike('resident_name', $searchValue)
-                ->orLike('purpose', $searchValue)
+                ->like('business_name', $searchValue)
+                ->orLike('owner_name', $searchValue)
+                ->orLike('business_address', $searchValue)
+                ->orLike('business_type', $searchValue)
+                ->orLike('status', $searchValue)
                 ->groupEnd();
         }
 

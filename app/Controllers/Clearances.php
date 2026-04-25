@@ -2,9 +2,9 @@
 
 namespace App\Controllers;
 
+
+use App\Models\ResidentsModel;      
 use App\Models\ClearancesModel;
-use App\Models\ResidentsModel;
-use App\Models\ClearanceTypesModel;
 use CodeIgniter\Controller;
 use CodeIgniter\HTTP\ResponseInterface;
 
@@ -21,7 +21,7 @@ class Clearances extends Controller
     {
         $this->clearancesModel = new ClearancesModel();
         $this->residentsModel = new ResidentsModel();
-        $this->clearanceTypesModel = new ClearanceTypesModel();
+        $this->clearanceTypesModel = new ClearancesModel();
         $this->validation = \Config\Services::validation();
     }
 

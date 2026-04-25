@@ -6,12 +6,12 @@
     <div class="container-fluid">
       <div class="row mb-2">
         <div class="col-sm-6">
-          <h1 class="m-0">Barangay Officials</h1>
+          <h1 class="m-0">Business Permits</h1>
         </div>
         <div class="col-sm-6">
           <ol class="breadcrumb float-sm-right">
             <li class="breadcrumb-item"><a href="#">Home</a></li>
-            <li class="breadcrumb-item active">Barangay Officials</li>
+            <li class="breadcrumb-item active">Business Permits</li>
           </ol>
         </div>
       </div>
@@ -24,7 +24,7 @@
         <div class="col-12">
           <div class="card">
             <div class="card-header">
-              <h3 class="card-title">List of Barangay Officials</h3>
+              <h3 class="card-title">List of Business Permits</h3>
               <div class="float-right">
                 <button type="button" class="btn btn-md btn-primary" data-toggle="modal" data-target="#AddNewModal">
                   <i class="fa fa-plus-circle fa fw"></i> Add New
@@ -32,16 +32,17 @@
               </div>
             </div>
             <div class="card-body">
-              <table id="officialsTable" class="table table-bordered table-striped table-sm">
+              <table id="permitsTable" class="table table-bordered table-striped table-sm">
                 <thead>
                   <tr>
                     <th>No.</th>
                     <th style="display:none;">id</th>
-                    <th>Full Name</th>
-                    <th>Position</th>
-                    <th>Term Start</th>
-                    <th>Term End</th>
-                    <th>Contact</th>
+                    <th>Business Name</th>
+                    <th>Owner</th>
+                    <th>Type</th>
+                    <th>Permit Type</th>
+                    <th>Issue Date</th>
+                    <th>Expiry Date</th>
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
@@ -57,90 +58,83 @@
     <!-- Add New Modal -->
     <div class="modal fade" id="AddNewModal" tabindex="-1" role="dialog" aria-hidden="true">
       <div class="modal-dialog modal-lg" role="document">
-        <form id="addOfficialForm">
+        <form id="addPermitForm">
           <?= csrf_field() ?>
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title"><i class="fa fa-plus-circle fa fw"></i> Add New Official</h5>
+              <h5 class="modal-title"><i class="fa fa-plus-circle fa fw"></i> Add New Business Permit</h5>
               <button type="button" class="close" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body">
               <div class="row">
-                <div class="col-sm-4">
+                <div class="col-sm-6">
                   <div class="form-group">
-                    <label>First Name <span class="text-danger">*</span></label>
-                    <input type="text" name="first_name" class="form-control" required />
+                    <label>Business Name <span class="text-danger">*</span></label>
+                    <input type="text" name="business_name" class="form-control" required />
                   </div>
                 </div>
-                <div class="col-sm-4">
+                <div class="col-sm-6">
                   <div class="form-group">
-                    <label>Middle Name</label>
-                    <input type="text" name="middle_name" class="form-control" />
-                  </div>
-                </div>
-                <div class="col-sm-4">
-                  <div class="form-group">
-                    <label>Last Name <span class="text-danger">*</span></label>
-                    <input type="text" name="last_name" class="form-control" required />
+                    <label>Owner Name <span class="text-danger">*</span></label>
+                    <input type="text" name="owner_name" class="form-control" required />
                   </div>
                 </div>
               </div>
               <div class="row">
                 <div class="col-sm-6">
                   <div class="form-group">
-                    <label>Position <span class="text-danger">*</span></label>
-                    <select name="position" class="form-control" required>
-                      <option value="">-- Select Position --</option>
-                      <option value="Barangay Captain">Barangay Captain</option>
-                      <option value="Barangay Councilor">Barangay Councilor</option>
-                      <option value="SK Chairman">SK Chairman</option>
-                      <option value="SK Councilor">SK Councilor</option>
-                      <option value="Secretary">Secretary</option>
-                      <option value="Treasurer">Treasurer</option>
+                    <label>Business Address <span class="text-danger">*</span></label>
+                    <input type="text" name="business_address" class="form-control" required />
+                  </div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="form-group">
+                    <label>Business Type</label>
+                    <input type="text" name="business_type" class="form-control" />
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-sm-4">
+                  <div class="form-group">
+                    <label>Permit Type</label>
+                    <select name="permit_type" class="form-control">
+                      <option value="">-- Select --</option>
+                      <option value="New">New</option>
+                      <option value="Renewal">Renewal</option>
+                      <option value="Amendment">Amendment</option>
                     </select>
                   </div>
                 </div>
+                <div class="col-sm-4">
+                  <div class="form-group">
+                    <label>Issue Date <span class="text-danger">*</span></label>
+                    <input type="date" name="issue_date" class="form-control" required />
+                  </div>
+                </div>
+                <div class="col-sm-4">
+                  <div class="form-group">
+                    <label>Expiry Date <span class="text-danger">*</span></label>
+                    <input type="date" name="expiry_date" class="form-control" required />
+                  </div>
+                </div>
+              </div>
+              <div class="row">
                 <div class="col-sm-6">
                   <div class="form-group">
                     <label>Status</label>
                     <select name="status" class="form-control">
+                      <option value="Pending">Pending</option>
                       <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
+                      <option value="Expired">Expired</option>
+                      <option value="Revoked">Revoked</option>
                     </select>
                   </div>
                 </div>
-              </div>
-              <div class="row">
-                <div class="col-sm-4">
-                  <div class="form-group">
-                    <label>Term Start <span class="text-danger">*</span></label>
-                    <input type="date" name="term_start" class="form-control" required />
-                  </div>
-                </div>
-                <div class="col-sm-4">
-                  <div class="form-group">
-                    <label>Term End</label>
-                    <input type="date" name="term_end" class="form-control" />
-                  </div>
-                </div>
-                <div class="col-sm-4">
-                  <div class="form-group">
-                    <label>Contact Number</label>
-                    <input type="text" name="contact_number" class="form-control" />
-                  </div>
-                </div>
-              </div>
-              <div class="row">
                 <div class="col-sm-6">
                   <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" name="email" class="form-control" />
-                  </div>
-                </div>
-                <div class="col-sm-6">
-                  <div class="form-group">
-                    <label>Address</label>
-                    <input type="text" name="address" class="form-control" />
+                    <label>Fees Paid (₱)</label>
+                    <input type="number" step="0.01" name="fees_paid" class="form-control" value="0.00" />
                   </div>
                 </div>
               </div>
@@ -155,92 +149,85 @@
     </div>
 
     <!-- Edit Modal -->
-    <div class="modal fade" id="editOfficialModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal fade" id="editPermitModal" tabindex="-1" role="dialog" aria-hidden="true">
       <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title"><i class="far fa-edit fa fw"></i> Edit Official</h5>
+            <h5 class="modal-title"><i class="far fa-edit fa fw"></i> Edit Business Permit</h5>
             <button type="button" class="close" data-dismiss="modal">&times;</button>
           </div>
-          <form id="editOfficialForm">
+          <form id="editPermitForm">
             <?= csrf_field() ?>
             <div class="modal-body">
-              <input type="hidden" id="editOfficialId" name="id" />
+              <input type="hidden" id="editPermitId" name="id" />
               <div class="row">
-                <div class="col-sm-4">
+                <div class="col-sm-6">
                   <div class="form-group">
-                    <label>First Name</label>
-                    <input type="text" name="first_name" id="editFirstName" class="form-control" required />
+                    <label>Business Name</label>
+                    <input type="text" name="business_name" id="editBusinessName" class="form-control" required />
                   </div>
                 </div>
-                <div class="col-sm-4">
+                <div class="col-sm-6">
                   <div class="form-group">
-                    <label>Middle Name</label>
-                    <input type="text" name="middle_name" id="editMiddleName" class="form-control" />
-                  </div>
-                </div>
-                <div class="col-sm-4">
-                  <div class="form-group">
-                    <label>Last Name</label>
-                    <input type="text" name="last_name" id="editLastName" class="form-control" required />
+                    <label>Owner Name</label>
+                    <input type="text" name="owner_name" id="editOwnerName" class="form-control" required />
                   </div>
                 </div>
               </div>
               <div class="row">
                 <div class="col-sm-6">
                   <div class="form-group">
-                    <label>Position</label>
-                    <select name="position" id="editPosition" class="form-control">
-                      <option value="Barangay Captain">Barangay Captain</option>
-                      <option value="Barangay Councilor">Barangay Councilor</option>
-                      <option value="SK Chairman">SK Chairman</option>
-                      <option value="SK Councilor">SK Councilor</option>
-                      <option value="Secretary">Secretary</option>
-                      <option value="Treasurer">Treasurer</option>
+                    <label>Business Address</label>
+                    <input type="text" name="business_address" id="editBusinessAddress" class="form-control" />
+                  </div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="form-group">
+                    <label>Business Type</label>
+                    <input type="text" name="business_type" id="editBusinessType" class="form-control" />
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-sm-4">
+                  <div class="form-group">
+                    <label>Permit Type</label>
+                    <select name="permit_type" id="editPermitType" class="form-control">
+                      <option value="New">New</option>
+                      <option value="Renewal">Renewal</option>
+                      <option value="Amendment">Amendment</option>
                     </select>
                   </div>
                 </div>
+                <div class="col-sm-4">
+                  <div class="form-group">
+                    <label>Issue Date</label>
+                    <input type="date" name="issue_date" id="editIssueDate" class="form-control" />
+                  </div>
+                </div>
+                <div class="col-sm-4">
+                  <div class="form-group">
+                    <label>Expiry Date</label>
+                    <input type="date" name="expiry_date" id="editExpiryDate" class="form-control" />
+                  </div>
+                </div>
+              </div>
+              <div class="row">
                 <div class="col-sm-6">
                   <div class="form-group">
                     <label>Status</label>
-                    <select name="status" id="editStatus" class="form-control">
+                    <select name="status" id="editPermitStatus" class="form-control">
+                      <option value="Pending">Pending</option>
                       <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
+                      <option value="Expired">Expired</option>
+                      <option value="Revoked">Revoked</option>
                     </select>
                   </div>
                 </div>
-              </div>
-              <div class="row">
-                <div class="col-sm-4">
-                  <div class="form-group">
-                    <label>Term Start</label>
-                    <input type="date" name="term_start" id="editTermStart" class="form-control" />
-                  </div>
-                </div>
-                <div class="col-sm-4">
-                  <div class="form-group">
-                    <label>Term End</label>
-                    <input type="date" name="term_end" id="editTermEnd" class="form-control" />
-                  </div>
-                </div>
-                <div class="col-sm-4">
-                  <div class="form-group">
-                    <label>Contact Number</label>
-                    <input type="text" name="contact_number" id="editContactNumber" class="form-control" />
-                  </div>
-                </div>
-              </div>
-              <div class="row">
                 <div class="col-sm-6">
                   <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" name="email" id="editEmail" class="form-control" />
-                  </div>
-                </div>
-                <div class="col-sm-6">
-                  <div class="form-group">
-                    <label>Address</label>
-                    <input type="text" name="address" id="editAddress" class="form-control" />
+                    <label>Fees Paid (₱)</label>
+                    <input type="number" step="0.01" name="fees_paid" id="editFeesPaid" class="form-control" />
                   </div>
                 </div>
               </div>
@@ -260,5 +247,5 @@
 
 <?= $this->section('scripts') ?>
 <script> const baseUrl = "<?= base_url() ?>"; </script>
-<script src="<?= base_url('assets/js/barangay_officials.js') ?>"></script>
+<script src="<?= base_url('assets/js/permits.js') ?>"></script>
 <?= $this->endSection() ?>

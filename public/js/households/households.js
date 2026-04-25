@@ -1,10 +1,10 @@
 $('#addForm').submit(function(e){
     e.preventDefault();
-    $.post(baseUrl+'blotter/save',$(this).serialize(),()=>location.reload());
+    $.post(baseUrl+'households/save',$(this).serialize(),()=>location.reload());
 });
 
 $(document).on('click','.edit-btn',function(){
-    $.get(baseUrl+'blotter/edit/'+$(this).data('id'),res=>{
+    $.get(baseUrl+'households/edit/'+$(this).data('id'),res=>{
         $('#editModal input[name=id]').val(res.data.id);
         $('#editModal').modal('show');
     },'json');
@@ -12,16 +12,16 @@ $(document).on('click','.edit-btn',function(){
 
 $('#editForm').submit(function(e){
     e.preventDefault();
-    $.post(baseUrl+'blotter/update',$(this).serialize(),()=>location.reload());
+    $.post(baseUrl+'households/update',$(this).serialize(),()=>location.reload());
 });
 
 $(document).on('click','.deleteBtn',function(){
     if(confirm('Delete?')){
-        $.post(baseUrl+'blotter/delete/'+$(this).data('id'),()=>location.reload());
+        $.post(baseUrl+'households/delete/'+$(this).data('id'),()=>location.reload());
     }
 });
 
 $('#example1').DataTable({
     serverSide:true,
-    ajax:{url:baseUrl+'blotter/fetchRecords',type:'POST'}
+    ajax:{url:baseUrl+'households/fetchRecords',type:'POST'}
 });
