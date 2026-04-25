@@ -1,10 +1,55 @@
 <style type="text/css">
-.nav-sidebar .nav-link {
-    position: relative;
-    transition: background 0.2s ease;
+/* BASE SIDEBAR STYLES */
+.main-sidebar {
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
 }
 
-/* Orange left bar */
+.sidebar-light-light {
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    border-right: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 4px 0 20px rgba(0,0,0,0.08);
+}
+
+body.dark-mode .sidebar-light-light {
+    background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
+    border-right: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 4px 0 25px rgba(0,0,0,0.4);
+}
+
+/* NAV LINKS - LIGHT MODE */
+.nav-sidebar .nav-link {
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: #4a5568 !important;
+    font-weight: 500;
+    font-family: 'Poppins', sans-serif;
+    padding: 12px 20px !important;
+    border-radius: 0 12px 12px 0;
+    margin: 2px 8px;
+    overflow: hidden;
+}
+
+.nav-sidebar .nav-link p {
+    color: inherit !important;
+    font-size: 14px;
+    margin: 0;
+}
+
+.nav-sidebar .nav-link .nav-icon {
+    color: #6b7280 !important;
+    font-size: 18px;
+    width: 24px;
+    margin-right: 12px;
+}
+
+.nav-sidebar .nav-link small {
+    font-size: 11px !important;
+    opacity: 0.7;
+    font-weight: 400;
+}
+
+/* ORANGE ACCENT BAR */
 .nav-sidebar .nav-link::before {
     content: "";
     position: absolute;
@@ -12,72 +57,152 @@
     top: 0;
     height: 100%;
     width: 4px;
-    background: linear-gradient(to bottom, #ff6b35, #f7931e);
+    background: linear-gradient(135deg, #ff6b35, #f7931e, #f57c00);
     border-radius: 0 3px 3px 0;
-    transform: scaleY(0);
+    transform: scaleY(0) translateX(-2px);
     transform-origin: top;
-    transition: transform 0.25s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 10px rgba(255, 107, 53, 0.4);
 }
 
-/* Show orange bar on hover & active */
-.nav-sidebar .nav-link.active::before,
-.nav-sidebar .nav-link:hover::before {
-    transform: scaleY(1);
+.nav-sidebar .nav-link:hover::before,
+.nav-sidebar .nav-link.active::before {
+    transform: scaleY(1) translateX(0);
 }
 
-/* SUPER LIGHT GRADIENT */
+/* HOVER & ACTIVE STATES - LIGHT MODE */
 .nav-sidebar .nav-link:hover,
 .nav-sidebar .nav-link.active {
-    background: linear-gradient(
-        to right,
-        rgba(255, 107, 53, 0.08),
-        rgba(247, 147, 30, 0.04)
+    background: linear-gradient(90deg, 
+        rgba(255, 107, 53, 0.12), 
+        rgba(247, 147, 30, 0.08),
+        rgba(255, 107, 53, 0.06)
     ) !important;
-    box-shadow: none !important;
+    color: #1a3c6e !important;
+    transform: translateX(4px);
+    box-shadow: 0 8px 25px rgba(255, 107, 53, 0.15) !important;
 }
 
-/* Submenu items same gradient */
+.nav-sidebar .nav-link:hover .nav-icon,
+.nav-sidebar .nav-link.active .nav-icon {
+    color: #ff6b35 !important;
+    transform: scale(1.1);
+}
+
+/* DARK MODE TEXT & ICONS */
+body.dark-mode .nav-sidebar .nav-link {
+    color: #e2e8f0 !important;
+}
+
+body.dark-mode .nav-sidebar .nav-link .nav-icon {
+    color: #94a3b8 !important;
+}
+
+body.dark-mode .nav-sidebar .nav-link:hover,
+body.dark-mode .nav-sidebar .nav-link.active {
+    background: linear-gradient(90deg, 
+        rgba(255, 107, 53, 0.20), 
+        rgba(247, 147, 30, 0.15),
+        rgba(255, 107, 53, 0.10)
+    ) !important;
+    color: #ffffff !important;
+    box-shadow: 0 8px 30px rgba(255, 107, 53, 0.3) !important;
+}
+
+body.dark-mode .nav-sidebar .nav-link:hover .nav-icon,
+body.dark-mode .nav-sidebar .nav-link.active .nav-icon {
+    color: #ffd689 !important;
+}
+
+/* NAV HEADERS */
+.nav-header {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 12px 20px 8px !important;
+    margin: 0 8px 4px;
+    text-transform: uppercase;
+}
+
+body.dark-mode .nav-header {
+    color: #94a3b8 !important;
+}
+
+.nav-header.text-warning { color: #f59e0b !important; }
+.nav-header.text-info { color: #0ea5e9 !important; }
+.nav-header.text-secondary { color: #64748b !important; }
+
+/* BRAND LINK IMPROVEMENTS */
+.brand-link {
+    background: linear-gradient(135deg, #ff6b35, #f7931e) !important;
+    border-bottom: 3px solid rgba(255,255,255,0.2) !important;
+    padding: 16px 20px !important;
+    transition: all 0.3s ease;
+    cursor: default;
+}
+
+.brand-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(255, 107, 53, 0.4) !important;
+}
+
+.brand-text {
+    font-family: 'Poppins', sans-serif !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px;
+}
+
+.brand-image {
+    width: 36px !important;
+    height: 36px !important;
+    opacity: 1 !important;
+    transition: all 0.3s ease;
+}
+
+.brand-link:hover .brand-image {
+    transform: scale(1.1) rotate(5deg);
+}
+
+/* SUBMENU STYLES */
+.nav-treeview .nav-link {
+    padding-left: 50px !important;
+    margin: 1px 8px !important;
+    font-size: 13px !important;
+    border-radius: 0 8px 8px 0 !important;
+}
+
 .nav-treeview .nav-link:hover,
 .nav-treeview .nav-link.active {
-    background: linear-gradient(
-        to right,
-        rgba(255, 107, 53, 0.08),
-        rgba(247, 147, 30, 0.04)
-    ) !important;
+    background: linear-gradient(90deg, rgba(255, 107, 53, 0.10), rgba(247, 147, 30, 0.06)) !important;
+    transform: translateX(2px);
 }
 
-/* Dark mode support */
-body.dark-mode .main-sidebar .nav-link {
-    color: #fff !important;
+body.dark-mode .nav-treeview .nav-link:hover,
+body.dark-mode .nav-treeview .nav-link.active {
+    background: linear-gradient(90deg, rgba(255, 107, 53, 0.18), rgba(247, 147, 30, 0.12)) !important;
 }
 
-body.dark-mode .main-sidebar .nav-link p {
-    color: #fff !important;
-}
-
-body.dark-mode .main-sidebar .nav-icon {
-    color: #fff !important;
-}
-
-body.dark-mode .main-sidebar .nav-link.active,
-body.dark-mode .main-sidebar .nav-link:hover {
-    background-color: rgba(255, 255, 255, 0.12) !important;
-}
-
-/* Brand link glow */
-.brand-link:hover {
-    box-shadow: 0 0 20px rgba(255, 165, 0, 0.3) !important;
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .nav-sidebar .nav-link {
+        margin: 1px 4px !important;
+        padding: 10px 16px !important;
+    }
+    
+    .brand-link {
+        padding: 12px 16px !important;
+    }
 }
 </style>
 
 <aside class="main-sidebar sidebar-light-light sidebar-light elevation-5" id="mainSidebar">
     <!-- Brand Logo -->
-    <div class="brand-link bg-gradient-warning" id="brandLink" style="cursor: default; border-bottom: 1px solid rgba(255,255,255,0.2);">
+    <div class="brand-link" id="brandLink">
         <img src="<?= base_url('assets/adminlte/dist/img/AdminLTELogo.png') ?>" 
              alt="Barangay MIS Logo" 
-             class="brand-image img-circle elevation-3" 
-             style="opacity: .9">
-        <span class="brand-text font-weight-light" style="color: white; font-size: 1.1rem;">
+             class="brand-image img-circle elevation-3">
+        <span class="brand-text font-weight-light">
             <strong>BRGY ISIO</strong>
         </span>
     </div>
@@ -99,14 +224,14 @@ body.dark-mode .main-sidebar .nav-link:hover {
                 </li>
 
                 <!-- Activity Logs -->
-                 </li>
-      <li class="nav-item">
-      <a href="<?= base_url('log') ?>" class="nav-link <?= is_active(1, 'log') ?>">
-        <i class="nav-icon fas fa-history"></i>
-        <p>Activity Logs</p>
-      </a>
-    </li>
-                <!-- USER ACCOUNTS - TOP LEVEL (PUT BACK) -->
+                <li class="nav-item">
+                    <a href="<?= base_url('log') ?>" class="nav-link <?= is_active(1, 'log') ?>">
+                        <i class="nav-icon fas fa-history"></i>
+                        <p>Activity Logs</p>
+                    </a>
+                </li>
+
+                <!-- User Accounts -->
                 <li class="nav-item">
                     <a href="<?= base_url('users') ?>" class="nav-link <?= (uri_string() == 'users') ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-user-lock text-danger"></i>
@@ -117,7 +242,7 @@ body.dark-mode .main-sidebar .nav-link:hover {
                     </a>
                 </li>
 
-                <!-- CORE BARANGAY MODULES -->
+                <!-- CORE MODULES -->
                 <li class="nav-header text-warning">🏘️ CORE MODULES</li>
 
                 <!-- Blotter System -->
@@ -131,7 +256,7 @@ body.dark-mode .main-sidebar .nav-link:hover {
                     </a>
                 </li>
 
-                <!-- Residents Management -->
+                <!-- Residents -->
                 <li class="nav-item">
                     <a href="<?= base_url('residents') ?>" class="nav-link <?= (uri_string() == 'residents') ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-users text-primary"></i>
@@ -142,7 +267,7 @@ body.dark-mode .main-sidebar .nav-link:hover {
                     </a>
                 </li>
 
-                <!-- Barangay Officials -->
+                <!-- Officials -->
                 <li class="nav-item">
                     <a href="<?= base_url('barangay-officials') ?>" class="nav-link <?= (uri_string() == 'barangay-officials') ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-user-tie text-warning"></i>
@@ -164,7 +289,7 @@ body.dark-mode .main-sidebar .nav-link:hover {
                     </a>
                 </li>
 
-                <!-- SERVICES MODULES -->
+                <!-- SERVICES -->
                 <li class="nav-header text-info">🏢 SERVICES</li>
 
                 <!-- Clearances -->
@@ -180,10 +305,10 @@ body.dark-mode .main-sidebar .nav-link:hover {
 
                 <!-- Business Permits -->
                 <li class="nav-item">
-                    <a href="<?= base_url('business-permits') ?>" class="nav-link <?= (uri_string() == 'business-permits') ? 'active' : '' ?>">
+                    <a href="<?= base_url('permits') ?>" class="nav-link <?= (uri_string() == 'business-permits') ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-store text-success"></i>
                         <p>
-                            <span>Business Permits</span>
+                            <span>Permits</span>
                             <small class="d-block text-muted">BPLS</small>
                         </p>
                     </a>
@@ -200,7 +325,7 @@ body.dark-mode .main-sidebar .nav-link:hover {
                     </a>
                 </li>
 
-                <!-- REPORTS & SETTINGS -->
+                <!-- UTILITIES -->
                 <li class="nav-header text-secondary">📊 UTILITIES</li>
 
                 <!-- Reports -->
@@ -214,7 +339,7 @@ body.dark-mode .main-sidebar .nav-link:hover {
                     </a>
                 </li>
 
-                <!-- Settings Dropdown -->
+                <!-- Settings -->
                 <li class="nav-item has-treeview">
                     <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-cogs"></i>
@@ -232,7 +357,6 @@ body.dark-mode .main-sidebar .nav-link:hover {
                         </li>
                     </ul>
                 </li>
-
             </ul>
         </nav>
     </div>

@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class PermitsModel extends Model
 {
-    protected $table      = 'business_permits';
+    protected $table      = 'permits';
     protected $primaryKey = 'id';
 
     protected $useTimestamps = true;

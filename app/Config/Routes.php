@@ -114,5 +114,9 @@ $routes->post('indigents/fetchRecords', 'Indigents::fetchRecords');
 |--------------------------------------------------------------------------
 */
 $routes->get('reports', 'Reports::index');
+$routes->get('dashboard/stats', 'Dashboard::stats');
+
+$routes->get('/dashboard', 'Dashboard::index');
+$routes->get('dashboard/stats', 'Dashboard::stats');
 // Logs routes for admin
 $routes->get('/log', 'Logs::log');

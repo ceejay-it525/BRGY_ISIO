@@ -10,14 +10,16 @@ class Reports extends Controller
     {
         $db = \Config\Database::connect();
 
-        // Summary counts for dashboard cards
-        $data['total_residents']  = $db->table('residents')->countAll();
-        $data['total_households'] = $db->table('households')->countAll();
-        $data['total_officials']  = $db->table('barangay_officials')->where('status', 'Active')->countAll();
-        $data['total_blotter']    = $db->table('blotter')->countAll();
-        $data['total_clearances'] = $db->table('clearances')->countAll();
-        $data['total_permits']    = $db->table('business_permits')->countAll();
-        $data['total_indigents']  = $db->table('indigents')->countAll();
+        $data = [];
+
+        // Summary counts
+        $data['total_residents']  = $db->table('residents')->countAllResults();
+        $data['total_households'] = $db->table('households')->countAllResults();
+        $data['total_blotter']    = $db->table('blotter')->countAllResults();
+        $data['total_clearances'] = $db->table('clearances')->countAllResults();
+        $data['total_officials']  = $db->table('barangay_officials')->countAllResults();
+        $data['total_permits']    = $db->table('permits')->countAllResults();
+        $data['total_indigents']  = $db->table('indigents')->countAllResults();
 
         // Residents by gender
         $data['residents_by_gender'] = $db->query(
@@ -50,7 +52,7 @@ class Reports extends Controller
 
         // Business permits by status
         $data['permits_by_status'] = $db->query(
-            "SELECT status, COUNT(*) as total FROM business_permits GROUP BY status"
+            "SELECT status, COUNT(*) as total FROM permits GROUP BY status"
         )->getResultArray();
 
         // Indigents by category

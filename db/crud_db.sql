@@ -70,7 +70,7 @@ CREATE TABLE `blotter` (
 -- Table structure for table `business_permits`
 --
 
-CREATE TABLE `business_permits` (
+CREATE TABLE `permits` (
   `id` int(11) NOT NULL,
   `business_name` varchar(150) DEFAULT NULL,
   `owner_name` varchar(150) DEFAULT NULL,
@@ -283,7 +283,7 @@ ALTER TABLE `blotter`
 --
 -- Indexes for table `business_permits`
 --
-ALTER TABLE `business_permits`
+ALTER TABLE `permits`
   ADD PRIMARY KEY (`id`),
   ADD KEY `owner_resident_id` (`owner_resident_id`);
 
@@ -352,7 +352,7 @@ ALTER TABLE `blotter`
 --
 -- AUTO_INCREMENT for table `business_permits`
 --
-ALTER TABLE `business_permits`
+ALTER TABLE `permits`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -409,10 +409,10 @@ ALTER TABLE `blotter`
   ADD CONSTRAINT `blotter_ibfk_2` FOREIGN KEY (`respondent_id`) REFERENCES `residents` (`id`) ON DELETE SET NULL;
 
 --
--- Constraints for table `business_permits`
+-- Constraints for table ``
 --
-ALTER TABLE `business_permits`
-  ADD CONSTRAINT `business_permits_ibfk_1` FOREIGN KEY (`owner_resident_id`) REFERENCES `residents` (`id`) ON DELETE SET NULL;
+ALTER TABLE `permits`
+  ADD CONSTRAINT `permits_ibfk_1` FOREIGN KEY (`owner_resident_id`) REFERENCES `residents` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `clearances`

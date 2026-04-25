@@ -24,74 +24,72 @@
     <!-- Main content -->
     <section class="content">
         <div class="container-fluid">
-            
-            <!-- BARANGAY STATS CARDS -->
-            <div class="row mb-4">
-                <!-- Total Residents -->
-                <div class="col-lg-3 col-6">
-                    <div class="small-box bg-gradient-info shadow">
-                        <div class="inner">
-                            <h3 id="totalResidents" class="text-white">1,247</h3>
-                            <p class="text-white">Total Residents</p>
-                        </div>
-                        <div class="icon">
-                            <i class="fas fa-users fa-2x"></i>
-                        </div>
-                        <a href="<?= base_url('residents') ?>" class="small-box-footer text-white">
-                            View <i class="fas fa-arrow-circle-right"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Active Officials -->
-                <div class="col-lg-3 col-6">
-                    <div class="small-box bg-gradient-primary shadow">
-                        <div class="inner">
-                            <h3 id="activeOfficials" class="text-white">12</h3>
-                            <p class="text-white">Active Officials</p>
-                        </div>
-                        <div class="icon">
-                            <i class="fas fa-user-tie fa-2x"></i>
-                        </div>
-                        <a href="<?= base_url('barangay-officials') ?>" class="small-box-footer text-white">
-                            Manage <i class="fas fa-arrow-circle-right"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Pending Blotter -->
-                <div class="col-lg-3 col-6">
-                    <div class="small-box bg-gradient-warning shadow">
-                        <div class="inner">
-                            <h3 id="pendingBlotter"><span class="text-warning">8</span></h3>
-                            <p>Pending Complaints</p>
-                        </div>
-                        <div class="icon">
-                            <i class="fas fa-exclamation-triangle fa-2x"></i>
-                        </div>
-                        <a href="<?= base_url('blotter') ?>" class="small-box-footer">
-                            View All <i class="fas fa-arrow-circle-right"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Business Permits -->
-                <div class="col-lg-3 col-6">
-                    <div class="small-box bg-gradient-success shadow">
-                        <div class="inner">
-                            <h3 id="businessPermits" class="text-white">156</h3>
-                            <p class="text-white">Active Permits</p>
-                        </div>
-                        <div class="icon">
-                            <i class="fas fa-store fa-2x"></i>
-                        </div>
-                        <a href="<?= base_url('business-permits') ?>" class="small-box-footer text-white">
-                            Renewals <i class="fas fa-arrow-circle-right"></i>
-                        </a>
-                    </div>
-                </div>
+         <!-- BARANGAY STATS CARDS -->
+<div class="row mb-4">
+    <!-- Total Residents -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-gradient-info shadow">
+            <div class="inner">
+                <h3 id="totalResidents" class="text-white"><?= $totalResidents ?? 0 ?></h3>
+                <p class="text-white">Total Residents</p>
             </div>
+            <div class="icon">
+                <i class="fas fa-users fa-2x"></i>
+            </div>
+            <a href="<?= base_url('residents') ?>" class="small-box-footer text-white">
+                View <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
 
+    <!-- Active Officials -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-gradient-primary shadow">
+            <div class="inner">
+                <h3 id="activeOfficials" class="text-white"><?= $activeOfficials ?? 0 ?></h3>
+                <p class="text-white">Active Officials</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-user-tie fa-2x"></i>
+            </div>
+            <a href="<?= base_url('barangay-officials') ?>" class="small-box-footer text-white">
+                Manage <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Pending Blotter -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-gradient-warning shadow">
+            <div class="inner">
+                <h3 id="pendingBlotter" class="text-dark"><?= $pendingBlotter ?? 0 ?></h3>
+                <p class="text-dark">Complaints</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-exclamation-triangle fa-2x"></i>
+            </div>
+            <a href="<?= base_url('blotter') ?>" class="small-box-footer">
+                View All <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Business Permits -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-gradient-success shadow">
+            <div class="inner">
+                <h3 id="businessPermits" class="text-white"><?= $activePermits ?? 0 ?></h3>
+                <p class="text-white">Permits</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-store fa-2x"></i>
+            </div>
+            <a href="<?= base_url('business-permits') ?>" class="small-box-footer text-white">
+                Renewals <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
             <!-- QUICK ACTIONS ROW -->
             <div class="row mb-4">
                 <div class="col-12">
@@ -167,94 +165,88 @@
                 </div>
             </div>
 
-            <!-- RECENT ACTIVITIES & CHARTS -->
-            <div class="row">
-                <!-- Recent Activities -->
-                <div class="col-lg-8">
-                    <div class="card shadow">
-                        <div class="card-header border-0 pb-0">
-                            <h5 class="card-title">
-                                <i class="fas fa-clock text-info me-2"></i>Recent Activities
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive p-0">
-                                <table class="table table-hover mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Activity</th>
-                                            <th>Date</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="recentActivities">
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex">
-                                                    <div class="flex-shrink-0">
-                                                        <img src="https://via.placeholder.com/40" class="rounded-circle" alt="User">
-                                                    </div>
-                                                    <div class="flex-grow-1 ms-3">
-                                                        <strong>Juan Dela Cruz</strong> added new resident
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>2 mins ago</td>
-                                            <td><span class="badge bg-success">Success</span></td>
-                                        </tr>
-                                        <!-- More activities loaded via AJAX -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Stats Chart -->
-                <div class="col-lg-4">
-                    <div class="card shadow">
-                        <div class="card-header border-0 pb-0">
-                            <h5 class="card-title">
-                                <i class="fas fa-chart-line text-success me-2"></i>Monthly Stats
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="statsChart" height="200"></canvas>
-                        </div>
-                    </div>
+<!-- RECENT ACTIVITIES & CHARTS -->
+<div class="row">
+    <!-- Recent Activities -->
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header border-0 pb-0">
+                <h5 class="card-title">
+                    <i class="fas fa-clock text-info me-2"></i>Recent Activities
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Activity</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentActivities">
+                            <tr>
+                                <td>
+                                    <div class="d-flex">
+                                        <div class="flex-grow-1">
+                                            <strong>System</strong> Dashboard loaded successfully
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Just now</td>
+                                <td><span class="badge bg-success">Success</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- UPCOMING EVENTS / NOTIFICATIONS -->
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card shadow">
-                        <div class="card-header bg-light">
-                            <ul class="nav nav-tabs card-header-tabs" id="notificationTab">
-                                <li class="nav-item">
-                                    <a class="nav-link active" href="#events" data-bs-toggle="tab">Events</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="#notifications" data-bs-toggle="tab">Alerts</a>
-                                </li>
-                            </ul>
-                        </div>
-                        <div class="card-body">
-                            <div class="tab-content">
-                                <div class="tab-pane fade show active" id="events">
-                                    <!-- Event calendar/list -->
-                                    <div id="eventCalendar"></div>
-                                </div>
-                                <div class="tab-pane fade" id="notifications">
-                                    <!-- System notifications -->
-                                </div>
-                            </div>
-                        </div>
+    <!-- Stats Chart -->
+    <div class="col-lg-4">
+        <div class="card shadow">
+            <div class="card-header border-0 pb-0">
+                <h5 class="card-title">
+                    <i class="fas fa-chart-line text-success me-2"></i>Monthly Stats
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="statsChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- UPCOMING EVENTS / NOTIFICATIONS -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-light">
+                <ul class="nav nav-tabs card-header-tabs" id="notificationTab">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#events" data-bs-toggle="tab">Events</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#notifications" data-bs-toggle="tab">Alerts</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="events">
+                        <div id="eventCalendar"></div>
+                    </div>
+                    <div class="tab-pane fade" id="notifications">
                     </div>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</div>
+</div>
+</section>
 </div>
 
 <style>
@@ -268,16 +260,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Live stats update every 30 seconds
-function updateStats() {
-    $.getJSON('<?= base_url('dashboard/stats') ?>', function(data) {
-        $('#totalResidents').text(data.residents || 0);
-        $('#activeOfficials').text(data.officials || 0);
-        $('#pendingBlotter').text(data.pendingBlotter || 0);
-        $('#businessPermits').text(data.businessPermits || 0);
-    });
-}
-
 // Initialize Chart.js
 const ctx = document.getElementById('statsChart').getContext('2d');
 new Chart(ctx, {
@@ -291,12 +273,6 @@ new Chart(ctx, {
             tension: 0.4
         }]
     }
-});
-
-// Update stats on load and periodically
-$(document).ready(function() {
-    updateStats();
-    setInterval(updateStats, 30000);
 });
 </script>
 
