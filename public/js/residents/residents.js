@@ -1,152 +1,218 @@
-$(document).ready(function () {
-    // These must be defined in your PHP file's <script> block
-    const baseUrl = window.baseUrl; 
-    const csrfName = window.csrfName;
-    const csrfHash = window.csrfHash;
+function showToast(type, message) {
+    if (type === 'success') {
+        toastr.success(message, 'Success');
+    } else {
+        toastr.error(message, 'Error');
+    }
+}
 
-    // 🔧 1. Initialize DataTable
-    let dataTable = $('#residentsTable').DataTable({
+
+// ================= ADD =================
+$('#addResidentForm').on('submit', function (e) {
+    e.preventDefault();
+
+    $.ajax({
+        url: baseUrl + 'residents/save',
+        method: 'POST',
+        data: $(this).serialize(),
+        dataType: 'json',
+        success: function (response) {
+
+            if (response.status === 'success') {
+                $('#AddNewModal').modal('hide');
+                $('#addResidentForm')[0].reset();
+
+                showToast('success', response.message);
+
+                $('#residentsTable').DataTable().ajax.reload(null, false);
+            } else {
+                showToast('error', response.message);
+            }
+        },
+        error: function (xhr) {
+            console.log(xhr.responseText);
+            showToast('error', 'Server error occurred');
+        }
+    });
+});
+
+
+// ================= EDIT FETCH =================
+$(document).on('click', '.edit-resident', function () {
+    const id = $(this).data('id');
+
+    $.ajax({
+        url: baseUrl + 'residents/get/' + id,
+        method: 'GET',
+        dataType: 'json',
+        success: function (response) {
+
+            if (response.status === 'success') {
+                const r = response.data;
+
+                $('#editResidentId').val(r.id);
+
+                $('#editFirstName').val(r.first_name);
+                $('#editMiddleName').val(r.middle_name);
+                $('#editLastName').val(r.last_name);
+                $('#editSuffix').val(r.suffix);
+
+                $('#editBirthdate').val(r.birthdate);
+                $('#editGender').val(r.gender);
+                $('#editCivilStatus').val(r.civil_status);
+
+                $('#editIsVoter').val(r.is_voter);
+                $('#editVoterId').val(r.voter_id);
+                $('#editHouseholdId').val(r.household_id);
+
+                $('#editStatus').val(r.status);
+
+                $('#editAddressLine1').val(r.address_line1);
+                $('#editBarangay').val(r.barangay);
+
+                $('#editResidentModal').modal('show');
+
+            } else {
+                showToast('error', response.message);
+            }
+        },
+        error: function (xhr) {
+            console.log(xhr.responseText);
+            showToast('error', 'Failed to fetch data');
+        }
+    });
+});
+
+
+// ================= UPDATE =================
+$('#editResidentForm').on('submit', function (e) {
+    e.preventDefault();
+
+    $.ajax({
+        url: baseUrl + 'residents/update',
+        method: 'POST',
+        data: $(this).serialize(),
+        dataType: 'json',
+        success: function (response) {
+
+            if (response.status === 'success') {
+                $('#editResidentModal').modal('hide');
+
+                showToast('success', response.message);
+
+                $('#residentsTable').DataTable().ajax.reload(null, false);
+            } else {
+                showToast('error', response.message);
+            }
+        },
+        error: function (xhr) {
+            console.log(xhr.responseText);
+            showToast('error', 'Update failed');
+        }
+    });
+});
+
+
+// ================= DELETE =================
+$(document).on('click', '.delete-resident', function () {
+
+    const id = $(this).data('id');
+
+    if (!confirm('Are you sure?')) return;
+
+    $.ajax({
+        url: baseUrl + 'residents/delete/' + id,
+        method: 'POST',
+        dataType: 'json',
+        success: function (response) {
+
+            if (response.status === 'success') {
+                showToast('success', response.message);
+                $('#residentsTable').DataTable().ajax.reload(null, false);
+            } else {
+                showToast('error', response.message);
+            }
+        },
+        error: function (xhr) {
+            console.log(xhr.responseText);
+            showToast('error', 'Delete failed');
+        }
+    });
+});
+
+
+// ================= DATATABLE =================
+$(document).ready(function () {
+
+    $('#residentsTable').DataTable({
         processing: true,
         serverSide: true,
         responsive: true,
-        pageLength: 10,
-        order: [[1, 'asc']], // Default sort by Full Name
+
         ajax: {
             url: baseUrl + 'residents/fetchRecords',
             type: 'POST',
-            data: function(d) {
-                d[csrfName] = csrfHash;
+
+            data: function (d) {
+                d.csrf_test_name = $('input[name=csrf_test_name]').val();
+            },
+
+            error: function (xhr) {
+                console.log(xhr.responseText);
+                alert("Datatable error. Check console.");
             }
         },
+
         columns: [
-            { data: 'row_number', name: 'row_number', searchable: false }, // No.
-            { 
-                data: 'first_name', 
-                render: function(data, type, row) {
-                    // Combines names for the "Full Name" column
-                    return `${row.first_name} ${row.last_name || ''}`.trim();
-                } 
-            }, // Full Name
-            { data: 'gender' },       // Gender
-            { data: 'civil_status' }, // Civil Status
-            { 
+            { data: 'row_number' },
+
+            {
+                data: null,
+                render: function (data, type, row) {
+                    return `${row.first_name ?? ''} ${row.last_name ?? ''}`;
+                }
+            },
+
+            { data: 'birthdate' },
+            { data: 'gender' },
+            { data: 'civil_status' },
+
+            {
                 data: 'is_voter',
-                render: function(data) {
-                    return data == '1' ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-danger">No</span>';
-                }
-            }, // Voter
-            { data: 'address_line1' }, // Address
-            { 
+                render: d => d == 1
+                    ? '<span class="badge bg-success">Yes</span>'
+                    : '<span class="badge bg-danger">No</span>'
+            },
+
+            { data: 'voter_id' },
+            { data: 'household_id' },
+            { data: 'address_line1' },
+            { data: 'barangay' },
+
+            {
                 data: 'status',
-                render: function(data) {
-                    let badge = (data === 'Active' || data == '1') ? 'bg-success' : 'bg-warning';
-                    let text = (data === 'Active' || data == '1') ? 'Active' : 'Inactive';
-                    return `<span class="badge ${badge}">${text}</span>`;
+                render: d => {
+                    let c = (d === 'Active') ? 'bg-success' : 'bg-warning';
+                    return `<span class="badge ${c}">${d}</span>`;
                 }
-            }, // Status
+            },
+
             {
                 data: null,
                 orderable: false,
                 searchable: false,
-                render: function(data, type, row) {
+                render: function (data, type, row) {
                     return `
-                        <div class="btn-group">
-                            <button class="btn btn-sm btn-warning edit-resident" data-id="${row.id}">
-                                <i class="fas fa-edit text-white"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger delete-resident" data-id="${row.id}">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>`;
-                }
-            } // Actions
-        ],
-        // Re-attach events every time the table redrawing (for pagination/search)
-        drawCallback: function() {
-            attachEventHandlers();
-        }
-    });
+                        <button class="btn btn-sm btn-warning edit-resident" data-id="${row.id}">
+                            <i class="far fa-edit"></i>
+                        </button>
 
-    // 🔧 2. Form Submit (Save & Update)
-    $('#addResidentForm, #editResidentForm').submit(function (e) {
-        e.preventDefault();
-        const form = $(this);
-        const isEdit = form.attr('id') === 'editResidentForm';
-        const url = isEdit ? baseUrl + 'residents/update' : baseUrl + 'residents/save';
-        
-        $.ajax({
-            url: url,
-            method: 'POST',
-            data: form.serialize(),
-            dataType: 'json',
-            success: function (response) {
-                if (response.status === 'success') {
-                    $('.modal').modal('hide');
-                    form[0].reset();
-                    dataTable.ajax.reload(null, false);
-                    alert(response.message); 
-                }
-            },
-            error: function(xhr) {
-                const errors = xhr.responseJSON ? xhr.responseJSON.messages : "An error occurred";
-                alert(typeof errors === 'object' ? Object.values(errors).join("\n") : errors);
-            }
-        });
-    });
-
-    // 🔧 3. Event Handlers
-    function attachEventHandlers() {
-        $('.edit-resident').off('click').on('click', function() {
-            editResident($(this).data('id'));
-        });
-        $('.delete-resident').off('click').on('click', function() {
-            deleteResident($(this).data('id'));
-        });
-    }
-
-    // 🔧 4. Edit Function
-    window.editResident = function(id) {
-        $.ajax({
-            url: baseUrl + 'residents/get/' + id,
-            method: 'GET',
-            dataType: 'json',
-            success: function(response) {
-                if (response.status === 'success') {
-                    const r = response.data;
-                    $('#editResidentId').val(r.id);
-                    $('#editFirstName').val(r.first_name);
-                    $('#editMiddleName').val(r.middle_name);
-                    $('#editLastName').val(r.last_name);
-                    $('#editSuffix').val(r.suffix);
-                    $('#editBirthdate').val(r.birthdate);
-                    $('#editGender').val(r.gender);
-                    $('#editCivilStatus').val(r.civil_status);
-                    $('#editIsVoter').val(r.is_voter);
-                    $('#editVoterId').val(r.voter_id);
-                    $('#editHouseholdId').val(r.household_id);
-                    $('#editStatus').val(r.status);
-                    $('#editAddressLine1').val(r.address_line1);
-                    $('#editBarangay').val(r.barangay);
-                    $('#editResidentModal').modal('show');
+                        <button class="btn btn-sm btn-danger delete-resident" data-id="${row.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    `;
                 }
             }
-        });
-    };
-
-    // 🔧 5. Delete Function
-    window.deleteResident = function(id) {
-        if (confirm('Are you sure you want to delete this resident?')) {
-            $.ajax({
-                url: baseUrl + 'residents/delete/' + id,
-                method: 'POST',
-                data: { 
-                    _method: 'DELETE',
-                    [csrfName]: csrfHash 
-                },
-                success: function() {
-                    dataTable.ajax.reload(null, false);
-                }
-            });
-        }
-    };
+        ]
+    });
 });

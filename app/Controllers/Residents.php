@@ -1,13 +1,11 @@
 <?php
+
 namespace App\Controllers;
 
 use App\Models\ResidentsModel;
-use CodeIgniter\API\ResponseTrait;
 
 class Residents extends BaseController
 {
-    use ResponseTrait;
-
     protected $residentsModel;
 
     public function __construct()
@@ -20,102 +18,160 @@ class Residents extends BaseController
         return view('residents/index');
     }
 
-    public function fetchRecords()
+    // ==============================
+    // FETCH DATATABLE RECORDS
+    // ==============================
+   public function fetchRecords()
+{
+    $request = service('request');
+
+    $draw   = (int) $request->getPost('draw');
+    $start  = (int) $request->getPost('start');
+    $length = (int) $request->getPost('length');
+
+    $search = $request->getPost('search');
+    $searchValue = $search['value'] ?? '';
+
+    $result = $this->residentsModel->getRecords($start, $length, $searchValue);
+
+    $counter = $start + 1;
+    foreach ($result['data'] as &$row) {
+        $row['row_number'] = $counter++;
+    }
+
+    return $this->response->setJSON([
+        'draw'            => $draw,
+        'recordsTotal'    => $this->residentsModel->countAllResults(false),
+        'recordsFiltered' => $result['filtered'],
+        'data'            => $result['data']
+    ]);
+}
+
+    // ==============================
+    // SAVE RESIDENT (FULL FIELDS)
+    // ==============================
+    public function save()
     {
-        $draw = (int) $this->request->getPost('draw');
-        $start = (int) $this->request->getPost('start');
-        $length = (int) $this->request->getPost('length');
-        $searchValue = $this->request->getPost('search')['value'] ?? '';
-        $orderColumnIndex = (int) $this->request->getPost('order')[0]['column'];
-        $orderDir = strtoupper($this->request->getPost('order')[0]['dir']);
+        $data = [
+            'first_name'     => $this->request->getPost('first_name'),
+            'middle_name'    => $this->request->getPost('middle_name'),
+            'last_name'      => $this->request->getPost('last_name'),
+            'suffix'         => $this->request->getPost('suffix'),
+            'birthdate'      => $this->request->getPost('birthdate'),
+            'gender'         => $this->request->getPost('gender'),
+            'civil_status'   => $this->request->getPost('civil_status'),
+            'is_voter'       => $this->request->getPost('is_voter') ? 1 : 0,
+            'voter_id'       => $this->request->getPost('voter_id'),
+            'household_id'   => $this->request->getPost('household_id'),
+            'address_line1'  => $this->request->getPost('address_line1'),
+            'barangay'       => $this->request->getPost('barangay'),
+            'status'         => $this->request->getPost('status')
+        ];
 
-        // ✅ Match YOUR DataTable columns exactly
-        $result = $this->residentsModel->getRecords($start, $length, $searchValue, $orderColumnIndex, $orderDir);
-
-        // ✅ Add row_number (your JS expects it)
-        $counter = $start + 1;
-        foreach ($result['data'] as &$row) {
-            $row['row_number'] = $counter++;
+        // Basic validation (User-style simplicity)
+        if (
+            empty($data['first_name']) ||
+            empty($data['last_name']) ||
+            empty($data['gender']) ||
+            empty($data['address_line1'])
+        ) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Required fields are missing'
+            ]);
         }
 
-        return $this->respond([
-            'draw' => $draw,
-            'recordsTotal' => $result['recordsTotal'],
-            'recordsFiltered' => $result['recordsFiltered'],
-            'data' => $result['data']
+        if ($this->residentsModel->insert($data)) {
+            return $this->response->setJSON([
+                'status' => 'success',
+                'message' => 'Resident saved successfully'
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status' => 'error',
+            'message' => 'Failed to save resident'
         ]);
     }
 
-    public function save()
-    {
-        if (!$this->validate([
-            'first_name' => 'required|min_length[2]',
-            'gender' => 'required',
-            'civil_status' => 'required',
-            'address_line1' => 'required',
-            'status' => 'required|in_list[1,0]'
-        ])) {
-            return $this->failValidationErrors($this->validator->getErrors());
-        }
-
-        $data = [
-            'first_name' => $this->request->getPost('first_name'),
-            'gender' => $this->request->getPost('gender'),
-            'civil_status' => $this->request->getPost('civil_status'),
-            'is_voter' => $this->request->getPost('is_voter') ? 1 : 0,
-            'address_line1' => $this->request->getPost('address_line1'),
-            'status' => $this->request->getPost('status')
-        ];
-
-        if ($this->residentsModel->insert($data)) {
-            return $this->respond(['status' => 'success', 'message' => 'Resident saved successfully']);
-        }
-        return $this->fail('Failed to save resident');
-    }
-
+    // ==============================
+    // GET SINGLE RESIDENT
+    // ==============================
     public function get($id)
     {
         $resident = $this->residentsModel->find($id);
+
         if ($resident) {
-            return $this->respond(['status' => 'success', 'data' => $resident]);
+            return $this->response->setJSON([
+                'status' => 'success',
+                'data' => $resident
+            ]);
         }
-        return $this->failNotFound('Resident not found');
+
+        return $this->response->setJSON([
+            'status' => 'error',
+            'message' => 'Resident not found'
+        ]);
     }
 
+    // ==============================
+    // UPDATE RESIDENT (FULL FIELDS)
+    // ==============================
     public function update()
     {
         $id = $this->request->getPost('id');
-        
-        if (!$this->validate([
-            'first_name' => 'required|min_length[2]',
-            'gender' => 'required',
-            'civil_status' => 'required',
-            'address_line1' => 'required',
-            'status' => 'required|in_list[1,0]'
-        ])) {
-            return $this->failValidationErrors($this->validator->getErrors());
+
+        if (empty($id)) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Invalid resident ID'
+            ]);
         }
 
         $data = [
-            'first_name' => $this->request->getPost('first_name'),
-            'gender' => $this->request->getPost('gender'),
-            'civil_status' => $this->request->getPost('civil_status'),
-            'is_voter' => $this->request->getPost('is_voter') ? 1 : 0,
-            'address_line1' => $this->request->getPost('address_line1'),
-            'status' => $this->request->getPost('status')
+            'first_name'     => $this->request->getPost('first_name'),
+            'middle_name'    => $this->request->getPost('middle_name'),
+            'last_name'      => $this->request->getPost('last_name'),
+            'suffix'         => $this->request->getPost('suffix'),
+            'birthdate'      => $this->request->getPost('birthdate'),
+            'gender'         => $this->request->getPost('gender'),
+            'civil_status'   => $this->request->getPost('civil_status'),
+            'is_voter'       => $this->request->getPost('is_voter') ? 1 : 0,
+            'voter_id'       => $this->request->getPost('voter_id'),
+            'household_id'   => $this->request->getPost('household_id'),
+            'address_line1'  => $this->request->getPost('address_line1'),
+            'barangay'       => $this->request->getPost('barangay'),
+            'status'         => $this->request->getPost('status')
         ];
 
         if ($this->residentsModel->update($id, $data)) {
-            return $this->respond(['status' => 'success', 'message' => 'Resident updated successfully']);
+            return $this->response->setJSON([
+                'status' => 'success',
+                'message' => 'Resident updated successfully'
+            ]);
         }
-        return $this->fail('Failed to update resident');
+
+        return $this->response->setJSON([
+            'status' => 'error',
+            'message' => 'Failed to update resident'
+        ]);
     }
 
+    // ==============================
+    // DELETE RESIDENT
+    // ==============================
     public function delete($id)
     {
         if ($this->residentsModel->delete($id)) {
-            return $this->respond(['status' => 'success', 'message' => 'Resident deleted successfully']);
+            return $this->response->setJSON([
+                'status' => 'success',
+                'message' => 'Resident deleted successfully'
+            ]);
         }
-        return $this->fail('Failed to delete resident');
+
+        return $this->response->setJSON([
+            'status' => 'error',
+            'message' => 'Failed to delete resident'
+        ]);
     }
 }

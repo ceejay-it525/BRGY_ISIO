@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use CodeIgniter\Model;
@@ -8,53 +9,75 @@ class ResidentsModel extends Model
     protected $table = 'residents';
     protected $primaryKey = 'id';
 
+    // ✅ FULL FIELD SET (matches your add + edit modal)
     protected $allowedFields = [
-        'first_name', 'gender', 'civil_status', 'is_voter', 
-        'address_line1', 'status'
+        'first_name',
+        'middle_name',
+        'last_name',
+        'suffix',
+        'birthdate',
+        'gender',
+        'civil_status',
+        'is_voter',
+        'voter_id',
+        'household_id',
+        'address_line1',
+        'barangay',
+        'status'
     ];
 
-    public function getRecords($start, $length, $searchValue = '', $orderColumnIndex = 0, $orderDir = 'ASC')
+    public function getRecords($start, $length, $searchValue = '')
     {
-        $builder = $this->builder();
+        // -------------------------
+        // BASE BUILDER (DATA QUERY)
+        // -------------------------
+        $builder = $this->db->table($this->table);
 
-        // ✅ TOTAL RECORDS (unfiltered)
-        $totalRecords = $this->countAllResults();
+        $builder->select('*');
 
-        // ✅ SEARCH
         if (!empty($searchValue)) {
             $builder->groupStart()
                 ->like('first_name', $searchValue)
+                ->orLike('middle_name', $searchValue)
+                ->orLike('last_name', $searchValue)
                 ->orLike('gender', $searchValue)
                 ->orLike('civil_status', $searchValue)
                 ->orLike('address_line1', $searchValue)
+                ->orLike('barangay', $searchValue)
+                ->orLike('voter_id', $searchValue)
                 ->groupEnd();
         }
 
-        // ✅ FILTERED COUNT
-        $recordsFiltered = $builder->countAllResults(false);
+        // -------------------------
+        // CLONE FOR COUNT (SAFE WAY)
+        // -------------------------
+        $countBuilder = $this->db->table($this->table);
+        $countBuilder->select('id');
 
-        // ✅ ORDERING - Map DataTable column index to DB column
-       // ✅ Update this inside getRecords() in your ResidentsModel
-$columns = [
-    0 => 'id',             // "No." column usually maps to ID or row_number
-    1 => 'first_name',     // "Full Name"
-    2 => 'gender',         // "Gender"
-    3 => 'civil_status',   // "Civil Status"
-    4 => 'is_voter',       // "Voter"
-    5 => 'address_line1',  // "Address"
-    6 => 'status'          // "Status"
-];
-        $orderColumn = $columns[$orderColumnIndex] ?? 'first_name';
-        $builder->orderBy($orderColumn, $orderDir);
+        if (!empty($searchValue)) {
+            $countBuilder->groupStart()
+                ->like('first_name', $searchValue)
+                ->orLike('middle_name', $searchValue)
+                ->orLike('last_name', $searchValue)
+                ->orLike('gender', $searchValue)
+                ->orLike('civil_status', $searchValue)
+                ->orLike('address_line1', $searchValue)
+                ->orLike('barangay', $searchValue)
+                ->orLike('voter_id', $searchValue)
+                ->groupEnd();
+        }
 
-        // ✅ PAGINATION
+        $filteredRecords = $countBuilder->countAllResults();
+
+        // -------------------------
+        // PAGINATION
+        // -------------------------
         $builder->limit($length, $start);
         $data = $builder->get()->getResultArray();
 
         return [
             'data' => $data,
-            'recordsTotal' => $totalRecords,
-            'recordsFiltered' => $recordsFiltered
+            'filtered' => $filteredRecords
         ];
     }
 }
