@@ -43,7 +43,8 @@ class Residents extends BaseController
         'draw'            => $draw,
         'recordsTotal'    => $this->residentsModel->countAllResults(false),
         'recordsFiltered' => $result['filtered'],
-        'data'            => $result['data']
+        'data'            => $result['data'],
+        'csrf_hash'       => csrf_hash()
     ]);
 }
 
@@ -83,14 +84,16 @@ class Residents extends BaseController
 
         if ($this->residentsModel->insert($data)) {
             return $this->response->setJSON([
-                'status' => 'success',
-                'message' => 'Resident saved successfully'
+                'status'    => 'success',
+                'message'   => 'Resident saved successfully',
+                'csrf_hash' => csrf_hash()
             ]);
         }
 
         return $this->response->setJSON([
-            'status' => 'error',
-            'message' => 'Failed to save resident'
+            'status'    => 'error',
+            'message'   => 'Failed to save resident',
+            'csrf_hash' => csrf_hash()
         ]);
     }
 
@@ -103,14 +106,16 @@ class Residents extends BaseController
 
         if ($resident) {
             return $this->response->setJSON([
-                'status' => 'success',
-                'data' => $resident
+                'status'    => 'success',
+                'data'      => $resident,
+                'csrf_hash' => csrf_hash()
             ]);
         }
 
         return $this->response->setJSON([
-            'status' => 'error',
-            'message' => 'Resident not found'
+            'status'    => 'error',
+            'message'   => 'Resident not found',
+            'csrf_hash' => csrf_hash()
         ]);
     }
 
@@ -146,14 +151,16 @@ class Residents extends BaseController
 
         if ($this->residentsModel->update($id, $data)) {
             return $this->response->setJSON([
-                'status' => 'success',
-                'message' => 'Resident updated successfully'
+                'status'    => 'success',
+                'message'   => 'Resident updated successfully',
+                'csrf_hash' => csrf_hash()
             ]);
         }
 
         return $this->response->setJSON([
-            'status' => 'error',
-            'message' => 'Failed to update resident'
+            'status'    => 'error',
+            'message'   => 'Failed to update resident',
+            'csrf_hash' => csrf_hash()
         ]);
     }
 
@@ -164,14 +171,17 @@ class Residents extends BaseController
     {
         if ($this->residentsModel->delete($id)) {
             return $this->response->setJSON([
-                'status' => 'success',
-                'message' => 'Resident deleted successfully'
+                'status'    => 'success',
+                'message'   => 'Resident deleted successfully',
+                'csrf_hash' => csrf_hash()
             ]);
         }
 
         return $this->response->setJSON([
-            'status' => 'error',
-            'message' => 'Failed to delete resident'
+            'status'    => 'error',
+            'message'   => 'Failed to delete resident',
+            'csrf_hash' => csrf_hash()
         ]);
     }
+
 }

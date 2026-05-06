@@ -9,50 +9,52 @@ use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
-/**
- * Class BaseController
- *
- * BaseController provides a convenient place for loading components
- * and performing functions that are needed by all your controllers.
- * Extend this class in any new controllers:
- *     class Home extends BaseController
- *
- * For security be sure to declare any new methods as protected or private.
- */
 abstract class BaseController extends Controller
 {
     /**
-     * Instance of the main Request object.
+     * Main request instance
      *
      * @var CLIRequest|IncomingRequest
      */
     protected $request;
 
     /**
-     * An array of helpers to be loaded automatically upon
-     * class instantiation. These helpers will be available
-     * to all other controllers that extend BaseController.
+     * Helpers loaded globally
      *
-     * @var list<string>
+     * @var array
      */
     protected $helpers = [];
 
     /**
-     * Be sure to declare properties for any property fetch you initialized.
-     * The creation of dynamic property is deprecated in PHP 8.2.
+     * Session instance (optional)
      */
-    // protected $session;
+    protected $session;
 
     /**
-     * @return void
+     * Init controller
      */
-    public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger)
-    {
-        // Do Not Edit This Line
+    public function initController(
+        RequestInterface $request,
+        ResponseInterface $response,
+        LoggerInterface $logger
+    ) {
+        // DO NOT REMOVE
         parent::initController($request, $response, $logger);
 
-        // Preload any models, libraries, etc, here.
+        // Load session service (optional but useful)
+        $this->session = service('session');
 
-        // E.g.: $this->session = service('session');
+        // You can preload other services here if needed
+        // e.g. $this->email = service('email');
+    }
+
+    /**
+     * ✅ CSRF token refresh endpoint (for AJAX requests)
+     */
+    public function refreshCsrf()
+    {
+        return $this->response->setJSON([
+            'csrfToken' => csrf_hash()
+        ]);
     }
 }

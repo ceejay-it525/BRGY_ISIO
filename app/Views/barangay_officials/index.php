@@ -1,300 +1,125 @@
 <?= $this->extend('theme/template') ?>
-
 <?= $this->section('content') ?>
 <style>
-/* ENHANCED CONTENT STYLES */
-.content-wrapper {
-    background: linear-gradient(145deg, #f8fafc 0%, #ffffff 100%);
-    min-height: calc(100vh - 60px);
-    transition: all 0.3s ease;
-}
+  .dataTables_filter, .dataTables_length { display: none !important; }
 
-body.dark-mode .content-wrapper {
-    background: linear-gradient(145deg, #0f0f23 0%, #1a1a2e 100%);
-}
+  .bg-gradient-primary { background: linear-gradient(135deg, #4a93e5, #1c5db8) !important; }
+  .text-white-75 { color: rgba(255,255,255,0.75) !important; }
 
-/* MODERN CONTENT HEADER */
-.content-header {
-    background: rgba(255,255,255,0.9);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(0,0,0,0.05);
-    padding: 24px 0;
-    margin-bottom: 30px;
-    box-shadow: 0 2px 20px rgba(0,0,0,0.08);
-}
+  #selectedAvatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+  .official-card-avatar { width:54px; height:54px; object-fit:cover; border-radius:50%; }
+  .btn-light.text-primary { color: #1c5db8 !important; }
 
-body.dark-mode .content-header {
-    background: rgba(26,26,46,0.95);
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    box-shadow: 0 2px 25px rgba(0,0,0,0.5);
-}
+  /* ── redesigned modal shared styles ── */
+  .modal-content { border: none; border-radius: 12px; overflow: hidden; }
 
-.content-header h1 {
-    font-family: 'Poppins', sans-serif;
-    font-weight: 700;
-    font-size: 2.2rem;
-    color: #1a3c6e;
-    margin: 0;
-    letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #1a3c6e, #2d6a9f);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
+  .modal-header-custom {
+    background: #1c5db8;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: none;
+  }
+  .modal-header-custom .mh-left { display: flex; align-items: center; gap: 10px; }
+  .modal-header-custom .mh-icon {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-header-custom .mh-icon i { color: #fff; font-size: 15px; }
+  .modal-header-custom .mh-title { font-size: 14px; font-weight: 500; color: #fff; margin: 0; }
+  .modal-header-custom .mh-sub { font-size: 11px; color: rgba(255,255,255,0.55); margin: 2px 0 0; }
+  .modal-header-custom .mh-close {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(255,255,255,0.15); border: none;
+    color: #fff; font-size: 15px; line-height: 1;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
 
-body.dark-mode .content-header h1 {
-    background: linear-gradient(135deg, #ffffff, #e2e8f0);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
+  .modal-steps {
+    display: flex; align-items: center; gap: 0;
+    padding: 0 20px;
+    background: #f8f9fb;
+    border-bottom: 1px solid #e9ecef;
+  }
+  .modal-steps .mstep {
+    display: flex; align-items: center; gap: 7px;
+    padding: 10px 0; margin-right: 20px;
+    font-size: 12px; color: #6c757d;
+    border-bottom: 2px solid transparent;
+  }
+  .modal-steps .mstep.active { color: #1c5db8; border-bottom-color: #1c5db8; }
+  .modal-steps .mstep-num {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #dee2e6; display: flex; align-items: center;
+    justify-content: center; font-size: 10px; font-weight: 600; color: #6c757d;
+  }
+  .modal-steps .mstep.active .mstep-num { background: #1c5db8; color: #fff; }
 
-.breadcrumb {
-    background: none;
-    padding: 0;
-    margin: 0;
-    font-family: 'Poppins', sans-serif;
-    font-size: 14px;
-}
-
-.breadcrumb-item a {
-    color: #64748b;
-    text-decoration: none;
-    transition: all 0.3s ease;
-}
-
-.breadcrumb-item a:hover {
-    color: #ff6b35;
-    text-shadow: 0 0 8px rgba(255,107,53,0.3);
-}
-
-.breadcrumb-item.active {
-    color: #1a3c6e;
-    font-weight: 600;
-}
-
-body.dark-mode .breadcrumb-item a { color: #94a3b8; }
-body.dark-mode .breadcrumb-item.active { color: #e2e8f0; }
-
-/* PREMIUM CARD DESIGN */
-.card {
-    border: none;
-    border-radius: 20px;
-    box-shadow: 
-        0 20px 60px rgba(0,0,0,0.12),
-        0 8px 25px rgba(0,0,0,0.08),
-        inset 0 1px 0 rgba(255,255,255,0.6);
-    overflow: hidden;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    background: rgba(255,255,255,0.95);
-    backdrop-filter: blur(20px);
-}
-
-body.dark-mode .card {
-    background: rgba(26,26,46,0.95);
-    box-shadow: 
-        0 20px 60px rgba(0,0,0,0.6),
-        0 8px 25px rgba(0,0,0,0.4),
-        inset 0 1px 0 rgba(255,255,255,0.08);
-}
-
-.card:hover {
-    transform: translateY(-8px);
-    box-shadow: 
-        0 30px 80px rgba(0,0,0,0.18),
-        0 12px 35px rgba(0,0,0,0.12) !important;
-}
-
-.card-header {
-    background: linear-gradient(135deg, #1a3c6e, #2d6a9f);
-    color: white;
-    border: none;
-    padding: 20px 28px;
-    position: relative;
-    overflow: hidden;
-}
-
-.card-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transition: left 0.6s;
-}
-
-.card:hover .card-header::before {
-    left: 100%;
-}
-
-.card-title {
-    font-family: 'Poppins', sans-serif;
-    font-weight: 700;
-    font-size: 1.4rem;
-    margin: 0;
-    letter-spacing: 0.5px;
-}
-
-/* ENHANCED BUTTONS */
-.btn {
-    font-family: 'Poppins', sans-serif;
-    font-weight: 600;
-    border-radius: 12px;
-    padding: 12px 28px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: none;
-    position: relative;
-    overflow: hidden;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #ff6b35, #f7931e);
-    box-shadow: 0 8px 25px rgba(255,107,53,0.4);
-}
-
-.btn-primary:hover {
-    transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 15px 40px rgba(255,107,53,0.6);
-    background: linear-gradient(135deg, #f57c00, #ff6b35);
-}
-
-.btn-secondary {
-    background: linear-gradient(135deg, #6b7280, #9ca3af);
-    box-shadow: 0 8px 25px rgba(107,114,128,0.4);
-}
-
-.btn-secondary:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 15px 40px rgba(107,114,128,0.6);
-}
-
-/* PREMIUM TABLE */
-.table {
-    background: rgba(255,255,255,0.8);
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    margin: 0;
-}
-
-body.dark-mode .table {
-    background: rgba(26,26,46,0.8);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-
-.table thead th {
-    background: linear-gradient(135deg, #1a3c6e, #2d6a9f);
-    color: white;
-    font-family: 'Poppins', sans-serif;
-    font-weight: 600;
-    font-size: 13px;
+  .modal-section-label {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.08em; color: #adb5bd;
     text-transform: uppercase;
-    letter-spacing: 0.8px;
-    border: none;
-    padding: 18px 16px;
-}
+    margin: 16px 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .modal-section-label::after {
+    content: ''; flex: 1; height: 1px; background: #e9ecef;
+  }
 
-.table tbody td {
-    padding: 16px;
-    vertical-align: middle;
-    border-color: rgba(0,0,0,0.05);
-    font-family: 'Poppins', sans-serif;
-}
+  .modal-body { padding: 4px 20px 16px; }
 
-.table-striped tbody tr:nth-of-type(odd) {
-    background: rgba(255,107,53,0.03);
-}
+  .modal-body .form-group { margin-bottom: 12px; }
+  .modal-body .form-group label {
+    font-size: 11px; font-weight: 600;
+    color: #495057; margin-bottom: 5px; display: block;
+  }
+  .modal-body .form-group label .req { color: #E24B4A; }
+  .modal-body .form-control {
+    height: 34px; font-size: 13px;
+    border: 1px solid #ced4da; border-radius: 6px;
+    padding: 0 10px;
+  }
+  .modal-body .form-control:focus {
+    border-color: #1c5db8;
+    box-shadow: 0 0 0 3px rgba(28,93,184,0.1);
+  }
+  .modal-body .form-text { font-size: 10px; color: #adb5bd; margin-top: 3px; }
 
-body.dark-mode .table-striped tbody tr:nth-of-type(odd) {
-    background: rgba(255,107,53,0.08);
-}
+  .upload-zone {
+    border: 1px dashed #ced4da; border-radius: 6px;
+    padding: 14px 10px; text-align: center; cursor: pointer;
+    background: #f8f9fb; transition: border-color .15s;
+  }
+  .upload-zone:hover { border-color: #1c5db8; }
+  .upload-zone i { font-size: 20px; color: #adb5bd; display: block; margin-bottom: 4px; }
+  .upload-zone span { font-size: 11px; color: #6c757d; display: block; }
+  .upload-zone small { font-size: 10px; color: #adb5bd; }
+  .upload-zone input[type=file] { display: none; }
 
-.table tbody tr:hover {
-    background: linear-gradient(90deg, rgba(255,107,53,0.1), rgba(247,147,30,0.05)) !important;
-    transform: scale(1.01);
-}
-
-/* MODAL ENHANCEMENTS */
-.modal-content {
-    border: none;
-    border-radius: 24px;
-    box-shadow: 
-        0 40px 100px rgba(0,0,0,0.3),
-        0 20px 50px rgba(0,0,0,0.2);
-    overflow: hidden;
-}
-
-.modal-header {
-    background: linear-gradient(135deg, #1a3c6e, #2d6a9f);
-    color: white;
-    border: none;
-    padding: 24px 28px;
-}
-
-.modal-title {
-    font-family: 'Poppins', sans-serif;
-    font-weight: 700;
-    font-size: 1.3rem;
-}
-
-.modal-body {
-    padding: 28px;
-    background: rgba(255,255,255,0.95);
-}
-
-body.dark-mode .modal-body {
-    background: rgba(26,26,46,0.95);
-}
-
-.form-control {
-    border: 2px solid rgba(0,0,0,0.08);
-    border-radius: 12px;
-    padding: 14px 18px;
-    font-family: 'Poppins', sans-serif;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    background: rgba(255,255,255,0.8);
-}
-
-.form-control:focus {
-    border-color: #ff6b35;
-    box-shadow: 0 0 0 4px rgba(255,107,53,0.15);
-    transform: translateY(-2px);
-    background: white;
-}
-
-body.dark-mode .form-control {
-    background: rgba(40,40,60,0.8);
-    border-color: rgba(255,255,255,0.1);
-    color: #e2e8f0;
-}
-
-body.dark-mode .form-control:focus {
-    background: rgba(50,50,70,0.9);
-    box-shadow: 0 0 0 4px rgba(255,107,53,0.25);
-}
-
-/* TOASTS */
-.toasts-top-right .toast {
-    border-radius: 16px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-    backdrop-filter: blur(20px);
-}
+  .modal-footer-custom {
+    padding: 12px 20px;
+    border-top: 1px solid #e9ecef;
+    background: #f8f9fb;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-footer-custom .f-hint { font-size: 11px; color: #adb5bd; }
+  .modal-footer-custom .f-hint span { color: #E24B4A; }
 </style>
 
+<!-- (keep all existing page HTML unchanged up to the modals) -->
 <div class="content-wrapper">
+
   <div class="content-header">
     <div class="container-fluid">
       <div class="row mb-2">
         <div class="col-sm-6">
           <h1 class="m-0">Barangay Officials</h1>
         </div>
-
         <div class="col-sm-6">
           <ol class="breadcrumb float-sm-right">
-            <li class="breadcrumb-item"><a href="#">Home</a></li>
+            <li class="breadcrumb-item"><a href="<?= base_url() ?>">Home</a></li>
             <li class="breadcrumb-item active">Officials</li>
           </ol>
         </div>
@@ -305,231 +130,243 @@ body.dark-mode .form-control:focus {
   <section class="content">
     <div class="container-fluid">
 
-      <div class="row">
+      <div class="row mb-4">
         <div class="col-12">
-
-          <div class="card">
-
-            <div class="card-header">
-              <h3 class="card-title">List of Barangay Officials</h3>
-
-              <div class="float-right">
-                <button type="button" class="btn btn-md btn-primary" data-toggle="modal" data-target="#AddNewModal">
-                  <i class="fa fa-plus-circle fa fw"></i> Add New
-                </button>
-              </div>
+          <div class="bg-gradient-primary rounded-lg shadow-sm p-4 d-flex flex-column flex-md-row justify-content-between align-items-start">
+            <div>
+              <h2 class="text-white mb-1">Barangay Officials</h2>
+              <p class="text-white-75 mb-0">View, search, and manage your barangay officials in one place.</p>
             </div>
-
-            <div class="card-body">
-              <table id="officialsTable" class="table table-bordered table-striped table-sm">
-                <thead>
-                  <tr>
-                    <th>No.</th>
-                    <th style="display:none;">id</th>
-                    <th>Full Name</th>
-                    <th>Position</th>
-                    <th>Term Start</th>
-                    <th>Term End</th>
-                    <th>Contact</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-
+            <button type="button" class="btn btn-light btn-md text-primary" data-toggle="modal" data-target="#AddNewModal">
+              <i class="fa fa-plus-circle"></i> Add New Official
+            </button>
           </div>
-
         </div>
       </div>
 
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="card shadow-sm border-0">
+            <div class="card-body pb-0">
+              <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3">
+                <div>
+                  <h3 class="card-title mb-1">Officials Directory</h3>
+                  <p class="text-muted mb-0">Browse elected officials, view full details, and manage assignments.</p>
+                </div>
+                <div class="input-group" style="max-width: 420px; width: 100%;">
+                  <input id="officialsSearch" type="search" class="form-control" placeholder="Search officials..." aria-label="Search officials">
+                  <div class="input-group-append">
+                    <button id="officialsSearchBtn" class="btn btn-secondary" type="button"><i class="fas fa-search"></i></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-body pt-0">
+              <div class="row">
+                <div class="col-lg-4 mb-4">
+                  <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body">
+                      <div class="text-center mb-4">
+                        <div id="selectedAvatar" class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width:110px;height:110px;font-size:28px;"></div>
+                        <h4 id="selectedName" class="mt-3 mb-1"></h4>
+                        <p id="selectedPosition" class="text-muted mb-0"></p>
+                      </div>
+                      <ul class="list-group list-group-flush">
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                          <span>Status</span><span id="selectedStatus" class="font-weight-bold"></span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                          <span>Term</span><span id="selectedTerm" class="font-weight-bold"></span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                          <span>Contact</span><span id="selectedContact"></span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                          <span>Email</span><span id="selectedEmail"></span>
+                        </li>
+                        <li class="list-group-item px-0">
+                          <strong>Address</strong>
+                          <div id="selectedAddress" class="text-muted"></div>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-lg-8">
+                  <div id="officialCards" class="row g-3"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <input type="hidden" id="csrfTokenField" name="csrf_test_name" value="<?= csrf_hash() ?>">
+
     </div>
 
-    <!-- ================= ADD MODAL ================= -->
-    <div class="modal fade" id="AddNewModal" tabindex="-1">
-      <div class="modal-dialog modal-lg">
+<!-- ================= ADD MODAL ================= -->
+<div class="modal fade" id="AddNewModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <form id="addOfficialForm" enctype="multipart/form-data">
+      <?= csrf_field() ?>
+      <div class="modal-content">
 
-        <form id="addOfficialForm">
-          <?= csrf_field() ?>
-
-          <div class="modal-content">
-
-            <div class="modal-header">
-              <h5 class="modal-title">
-                <i class="fa fa-plus-circle fa fw"></i> Add New Official
-              </h5>
-              <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <!-- Header -->
+        <div class="modal-header-custom">
+          <div class="mh-left">
+            <div class="mh-icon"><i class="fa fa-user-plus"></i></div>
+            <div>
+              <p class="mh-title">Add new barangay official</p>
+              <p class="mh-sub">Fill in all required fields to register an official</p>
             </div>
-
-            <div class="modal-body">
-
-              <div class="row">
-                <div class="col-sm-4">
-                  <div class="form-group">
-                    <label>First Name *</label>
-                    <input type="text" name="first_name" class="form-control" required>
-                  </div>
-                </div>
-
-                <div class="col-sm-4">
-                  <div class="form-group">
-                    <label>Middle Name</label>
-                    <input type="text" name="middle_name" class="form-control">
-                  </div>
-                </div>
-
-                <div class="col-sm-4">
-                  <div class="form-group">
-                    <label>Last Name *</label>
-                    <input type="text" name="last_name" class="form-control" required>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row">
-                <div class="col-sm-6">
-                  <div class="form-group">
-                    <label>Position *</label>
-                    <select name="position" class="form-control" required>
-                      <option value="">-- Select Position --</option>
-                      <option value="Barangay Captain">Barangay Captain</option>
-                      <option value="Barangay Councilor">Barangay Councilor</option>
-                      <option value="SK Chairman">SK Chairman</option>
-                      <option value="SK Councilor">SK Councilor</option>
-                      <option value="Secretary">Secretary</option>
-                      <option value="Treasurer">Treasurer</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div class="col-sm-6">
-                  <div class="form-group">
-                    <label>Status</label>
-                    <select name="status" class="form-control">
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row">
-                <div class="col-sm-4">
-                  <div class="form-group">
-                    <label>Term Start *</label>
-                    <input type="date" name="term_start" class="form-control" required>
-                  </div>
-                </div>
-
-                <div class="col-sm-4">
-                  <div class="form-group">
-                    <label>Term End</label>
-                    <input type="date" name="term_end" class="form-control">
-                  </div>
-                </div>
-
-                <div class="col-sm-4">
-                  <div class="form-group">
-                    <label>Contact</label>
-                    <input type="text" name="contact_number" class="form-control">
-                  </div>
-                </div>
-              </div>
-
-              <div class="row">
-                <div class="col-sm-6">
-                  <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" name="email" class="form-control">
-                  </div>
-                </div>
-
-                <div class="col-sm-6">
-                  <div class="form-group">
-                    <label>Address</label>
-                    <input type="text" name="address" class="form-control">
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                <i class="fas fa-times-circle"></i> Cancel
-              </button>
-              <button type="submit" class="btn btn-primary">
-                <i class="fa fa-save"></i> Save
-              </button>
-            </div>
-
           </div>
-        </form>
+          <button type="button" class="mh-close" data-dismiss="modal">&#215;</button>
+        </div>
+
+        <!-- Step indicators -->
+        <div class="modal-steps">
+          <div class="mstep active"><div class="mstep-num">1</div> Personal info</div>
+          <div class="mstep"><div class="mstep-num">2</div> Position &amp; term</div>
+          <div class="mstep"><div class="mstep-num">3</div> Contact &amp; status</div>
+        </div>
+
+        <div class="modal-body">
+
+          <div class="modal-section-label">Full name</div>
+          <div class="row">
+            <div class="col-sm-4">
+              <div class="form-group">
+                <label>First name <span class="req">*</span></label>
+                <input type="text" name="first_name" class="form-control" placeholder="e.g. Juan" required>
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="form-group">
+                <label>Middle name</label>
+                <input type="text" name="middle_name" class="form-control" placeholder="Optional">
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="form-group">
+                <label>Last name <span class="req">*</span></label>
+                <input type="text" name="last_name" class="form-control" placeholder="e.g. dela Cruz" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-section-label">Position &amp; term</div>
+          <div class="row">
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label>Position <span class="req">*</span></label>
+                <select id="addPosition" name="position" class="form-control position-select" required>
+                  <option value="">Select position</option>
+                  <option>Barangay Captain</option>
+                  <option>Barangay Councilor</option>
+                  <option>SK Chairman</option>
+                  <option>SK Councilor</option>
+                  <option>Secretary</option>
+                  <option>Treasurer</option>
+                  <option>Purok President</option>
+                  <option>Kagawad</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label>Status</label>
+                <select name="status" class="form-control">
+                  <option>Active</option>
+                  <option>Inactive</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label>Term start <span class="req">*</span></label>
+                <input type="date" name="term_start" class="form-control" required>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label>Term end</label>
+                <input type="date" name="term_end" class="form-control">
+                <small class="form-text">Leave blank if currently serving</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-section-label">Contact &amp; address</div>
+          <div class="row">
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label>Contact number</label>
+                <input type="text" name="contact_number" class="form-control" placeholder="09171234567">
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label>Email address</label>
+                <input type="email" name="email" class="form-control" placeholder="official@example.com">
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-sm-8">
+              <div class="form-group">
+                <label>Home address</label>
+                <input type="text" name="address" class="form-control" placeholder="Purok, Sitio, Barangay">
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="form-group">
+                <label>Photo</label>
+                <label class="upload-zone w-100">
+                  <input type="file" name="photo" accept="image/*">
+                  <i class="fas fa-cloud-upload-alt"></i>
+                  <span>Click to upload</span>
+                  <small>JPG, PNG, GIF — max 2MB</small>
+                </label>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="modal-footer-custom">
+          <span class="f-hint">Fields marked <span>*</span> are required</span>
+          <div>
+            <button type="button" class="btn btn-secondary btn-sm mr-2" data-dismiss="modal">
+              <i class="fas fa-times-circle"></i> Cancel
+            </button>
+            <button type="submit" class="btn btn-primary btn-sm">
+              <i class="fa fa-save"></i> Save official
+            </button>
+          </div>
+        </div>
 
       </div>
-    </div>
-
-    <!-- ================= EDIT MODAL ================= -->
-    <div class="modal fade" id="editOfficialModal" tabindex="-1">
-      <div class="modal-dialog modal-lg">
-
-        <form id="editOfficialForm">
-          <?= csrf_field() ?>
-
-          <div class="modal-content">
-
-            <div class="modal-header">
-              <h5 class="modal-title">
-                <i class="far fa-edit fa fw"></i> Edit Official
-              </h5>
-              <button type="button" class="close" data-dismiss="modal">&times;</button>
-            </div>
-
-            <div class="modal-body">
-
-              <input type="hidden" id="editOfficialId" name="id">
-
-              <div class="row">
-                <div class="col-sm-4">
-                  <input type="text" id="editFirstName" name="first_name" class="form-control">
-                </div>
-
-                <div class="col-sm-4">
-                  <input type="text" id="editMiddleName" name="middle_name" class="form-control">
-                </div>
-
-                <div class="col-sm-4">
-                  <input type="text" id="editLastName" name="last_name" class="form-control">
-                </div>
-              </div>
-
-            </div>
-
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                <i class="fas fa-times-circle"></i> Cancel
-              </button>
-              <button type="submit" class="btn btn-primary">
-                <i class="fa fa-save"></i> Save
-              </button>
-            </div>
-
-          </div>
-        </form>
-
-      </div>
-    </div>
-
-  </section>
+    </form>
+  </div>
 </div>
+<div class="toasts-top-right fixed" style="position:fixed;top:1rem;right:1rem;z-index:9999;"></div>
 
-<div class="toasts-top-right fixed" style="position: fixed; top: 1rem; right: 1rem; z-index: 9999;"></div>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
-    const baseUrl = "<?= base_url() ?>";
+  (function() {
+    const path = window.location.pathname;
+    const basePath = window.location.origin + path.replace(/\/[^\/]+\/?$/, '/');
+    window.baseUrl = basePath;
+    const script = document.createElement('script');
+    script.src = basePath + '../js/barangay_officials/barangay_officials.js';
+    script.defer = true;
+    document.body.appendChild(script);
+  })();
 </script>
-<script src="<?= base_url('js/barangay_officials/barangay_officials.js') ?>"></script>
 <?= $this->endSection() ?>

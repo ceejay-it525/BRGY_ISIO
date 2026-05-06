@@ -36,24 +36,22 @@ $routes->group('residents', function($routes) {
     $routes->post('update', 'Residents::update');
     $routes->post('delete/(:num)', 'Residents::delete/$1');
 });
-/*
-|--------------------------------------------------------------------------
+/* |--------------------------------------------------------------------------
 | BARANGAY OFFICIALS
-|--------------------------------------------------------------------------
-*/
+|--------------------------------------------------------------------------*/
 $routes->get('barangay-officials', 'BarangayOfficials::index');
+$routes->post('barangay-officials/fetchRecords', 'BarangayOfficials::fetchRecords');
 $routes->post('barangay-officials/save', 'BarangayOfficials::save');
-$routes->get('barangay-officials/edit/(:num)', 'BarangayOfficials::edit/$1');
+$routes->get('barangay-officials/get/(:num)', 'BarangayOfficials::get/$1');  // ✅ ADDED
 $routes->post('barangay-officials/update', 'BarangayOfficials::update');
 $routes->post('barangay-officials/delete/(:num)', 'BarangayOfficials::delete/$1');
-$routes->post('barangay-officials/fetchRecords', 'BarangayOfficials::fetchRecords');
-
 /*
 |--------------------------------------------------------------------------
 | HOUSEHOLDS
 |--------------------------------------------------------------------------
 */
 $routes->get('households', 'Households::index');
+$routes->get('households/get/(:num)', 'Households::get/$1');  // ✅ ADDED for edit fetch
 $routes->post('households/save', 'Households::save');
 $routes->get('households/edit/(:num)', 'Households::edit/$1');
 $routes->post('households/update', 'Households::update');
@@ -67,7 +65,8 @@ $routes->post('households/fetchRecords', 'Households::fetchRecords');
 */
 $routes->get('blotter', 'Blotter::index');
 $routes->post('blotter/save', 'Blotter::save');
-$routes->get('blotter/edit/(:num)', 'Blotter::edit/$1');
+$routes->get('blotter/get/(:num)', 'Blotter::get/$1');
+$routes->get('blotter/edit/(:num)', 'Blotter::get/$1');
 $routes->post('blotter/update', 'Blotter::update');
 $routes->post('blotter/delete/(:num)', 'Blotter::delete/$1');
 $routes->post('blotter/fetchRecords', 'Blotter::fetchRecords');
@@ -90,6 +89,7 @@ $routes->post('clearances/fetchRecords', 'Clearances::fetchRecords');
 |--------------------------------------------------------------------------
 */
 $routes->get('permits', 'Permits::index');
+$routes->get('permits/get/(:num)', 'Permits::get/$1');  // ✅ ADDED for edit fetch
 $routes->post('permits/save', 'Permits::save');
 $routes->get('permits/edit/(:num)', 'Permits::edit/$1');
 $routes->post('permits/update', 'Permits::update');
@@ -118,5 +118,7 @@ $routes->get('dashboard/stats', 'Dashboard::stats');
 
 $routes->get('/dashboard', 'Dashboard::index');
 $routes->get('dashboard/stats', 'Dashboard::stats');
+$routes->get('csrf/refresh', 'BaseController::refreshCsrf');
+
 // Logs routes for admin
 $routes->get('/log', 'Logs::log');

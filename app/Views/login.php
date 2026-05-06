@@ -261,7 +261,7 @@
 
   <!-- LEFT PANEL -->
   <div class="left-panel">
-    <img src="<?= base_url('assets/img/pasig.jpeg') ?>" alt="BMIS Logo">
+    <img src="<?= base_url('assets/img/isio.jpeg.png') ?>" alt="Barangay ISIO Logo">
     <h2>BMIS</h2>
     <div class="divider"></div>
     <p>Barangay Management<br>Information System</p>

@@ -54,7 +54,18 @@ $(document).ready(function () {
             },
 
             { data: 'birthdate' },
-            { data: 'gender' },
+          {
+    data: 'gender',
+    render: function (data) {
+        if (data === 'Male') {
+            return '<span class="badge bg-primary">Male</span>';
+        } else if (data === 'Female') {
+            return '<span class="badge bg-pink">Female</span>';
+        } else {
+            return '<span class="badge bg-secondary">Other</span>';
+        }
+    }
+},
             { data: 'civil_status' },
 
             {

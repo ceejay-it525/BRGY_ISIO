@@ -199,8 +199,8 @@ body.dark-mode .nav-treeview .nav-link.active {
 <aside class="main-sidebar sidebar-light-light sidebar-light elevation-5" id="mainSidebar">
     <!-- Brand Logo -->
     <div class="brand-link" id="brandLink">
-        <img src="<?= base_url('assets/adminlte/dist/img/AdminLTELogo.png') ?>" 
-             alt="Barangay MIS Logo" 
+        <img src="<?= base_url('assets/img/isio.jpeg.png') ?>" 
+             alt="Barangay ISIO Logo" 
              class="brand-image img-circle elevation-3">
         <span class="brand-text font-weight-light">
             <strong>BRGY ISIO</strong>
@@ -305,7 +305,7 @@ body.dark-mode .nav-treeview .nav-link.active {
 
                 <!-- Business Permits -->
                 <li class="nav-item">
-                    <a href="<?= base_url('permits') ?>" class="nav-link <?= (uri_string() == 'business-permits') ? 'active' : '' ?>">
+                    <a href="<?= base_url('permits') ?>" class="nav-link <?= (uri_string() == 'permits') ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-store text-success"></i>
                         <p>
                             <span>Permits</span>

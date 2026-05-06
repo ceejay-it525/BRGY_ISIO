@@ -1,15 +1,11 @@
 <?php
 
 namespace App\Controllers;
-use App\Models\BlotterPartiesModel;
-use App\Models\BlotterHearingsModel;
+
 use App\Models\BlotterModel;
-use CodeIgniter\API\ResponseTrait;
 
 class Blotter extends BaseController
 {
-    use ResponseTrait;
-
     protected $blotterModel;
 
     public function __construct()
@@ -22,108 +18,175 @@ class Blotter extends BaseController
         return view('blotter/index');
     }
 
+    // ==============================
+    // FETCH DATATABLE RECORDS
+    // ==============================
     public function fetchRecords()
     {
-        $draw = $this->request->getPost('draw');
-        $start = $this->request->getPost('start');
-        $length = $this->request->getPost('length');
-        $searchValue = $this->request->getPost('search')['value'];
-        $orderColumn = $this->request->getPost('order')[0]['column'];
-        $orderDir = $this->request->getPost('order')[0]['dir'];
+        $request = service('request');
 
-        $result = $this->blotterModel->getRecords($start, $length, $searchValue, $orderColumn, $orderDir);
+        $draw   = (int) $request->getPost('draw');
+        $start  = (int) $request->getPost('start');
+        $length = (int) $request->getPost('length');
 
+        $search      = $request->getPost('search');
+        $searchValue = $search['value'] ?? '';
+
+        $searchType  = $request->getPost('search_type') ?? 'all';
+        $searchTerm  = trim($request->getPost('search_term') ?? $searchValue);
+
+        $result  = $this->blotterModel->getRecords($start, $length, $searchTerm, $searchType);
         $counter = $start + 1;
+
         foreach ($result['data'] as &$row) {
             $row['row_number'] = $counter++;
-            $row['incident_date'] = date('M d, Y', strtotime($row['incident_date']));
         }
 
-        return $this->respond([
-            'draw' => $draw,
-            'recordsTotal' => $result['recordsTotal'],
-            'recordsFiltered' => $result['recordsFiltered'],
-            'data' => $result['data']
+        return $this->response->setJSON([
+            'draw'            => $draw,
+            'recordsTotal'    => $this->blotterModel->countAllResults(false),
+            'recordsFiltered' => $result['filtered'],
+            'data'            => $result['data'],
+            'csrf_hash'       => csrf_hash()
         ]);
-    }public function getParties($blotter_id)
-{
-    $model = new BlotterPartiesModel();
-    return $this->respond($model->where('blotter_id', $blotter_id)->findAll());
-}
+    }
 
-public function saveParty()
-{
-    $model = new BlotterPartiesModel();
-    $model->insert($this->request->getPost());
-    return $this->respond(['status' => 'success']);
-}
-
-public function deleteParty($id)
-{
-    $model = new BlotterPartiesModel();
-    $model->delete($id);
-    return $this->respond(['status' => 'deleted']);
-}
-
-// ================= HEARINGS =================
-
-public function getHearings($blotter_id)
-{
-    $model = new BlotterHearingsModel();
-    return $this->respond($model->where('blotter_id', $blotter_id)->findAll());
-}
-
-public function saveHearing()
-{
-    $model = new BlotterHearingsModel();
-    $model->insert($this->request->getPost());
-    return $this->respond(['status' => 'success']);
-}
-
-public function deleteHearing($id)
-{
-    $model = new BlotterHearingsModel();
-    $model->delete($id);
-    return $this->respond(['status' => 'deleted']);
-}
-
+    // ==============================
+    // SAVE BLOTTER
+    // ==============================
     public function save()
     {
-        if (!$this->validate([
-            'case_number' => 'required',
-            'incident_date' => 'required',
-            'incident_location' => 'required',
-            'status' => 'required'
-        ])) {
-            return $this->failValidationErrors($this->validator->getErrors());
+        $data = [
+            'case_number'      => $this->request->getPost('case_number'),
+            'incident_type'    => $this->request->getPost('incident_type'),
+            'incident_date'    => $this->request->getPost('incident_date'),
+            'complainant_name' => $this->request->getPost('complainant_name'),
+            'respondent_name'  => $this->request->getPost('respondent_name'),
+            'incident_location'=> $this->request->getPost('incident_location'),
+            'status'           => $this->request->getPost('status') ?: 'Ongoing',
+            'narrative'        => $this->request->getPost('narrative'),
+            'action_taken'     => $this->request->getPost('action_taken'),
+        ];
+
+        if (
+            empty($data['incident_type']) ||
+            empty($data['incident_date']) ||
+            empty($data['complainant_name']) ||
+            empty($data['respondent_name'])
+        ) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Required fields are missing.',
+            ]);
         }
 
-        if ($this->blotterModel->insert($this->request->getPost())) {
-            return $this->respondCreated(['status' => 'success', 'message' => 'Blotter added successfully']);
+        if ($this->blotterModel->insert($data)) {
+            return $this->response->setJSON([
+                'status'    => 'success',
+                'message'   => 'Blotter record saved successfully.',
+                'csrf_hash' => csrf_hash()
+            ]);
         }
 
-        return $this->fail('Failed to save blotter');
+        return $this->response->setJSON([
+            'status'    => 'error',
+            'message'   => 'Failed to save blotter record.',
+            'csrf_hash' => csrf_hash()
+        ]);
     }
 
-    public function edit($id)
+    // ==============================
+    // GET SINGLE BLOTTER
+    // ==============================
+    public function get($id)
     {
-        $data = $this->blotterModel->find($id);
-        return $data ? $this->respond($data) : $this->failNotFound('Not found');
-    }
+        $blotter = $this->blotterModel->find($id);
 
-    public function update($id)
-    {
-        if ($this->blotterModel->update($id, $this->request->getPost())) {
-            return $this->respond(['status' => 'success', 'message' => 'Updated successfully']);
+        if ($blotter) {
+            return $this->response->setJSON([
+                'status'    => 'success',
+                'data'      => $blotter,
+                'csrf_hash' => csrf_hash()
+            ]);
         }
-        return $this->fail('Update failed');
+
+        return $this->response->setJSON([
+            'status'    => 'error',
+            'message'   => 'Blotter record not found.',
+            'csrf_hash' => csrf_hash()
+        ]);
     }
 
+    // ==============================
+    // UPDATE BLOTTER
+    // ==============================
+    public function update()
+    {
+        $id = $this->request->getPost('id');
+
+        if (empty($id)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Invalid blotter ID.',
+            ]);
+        }
+
+        $data = [
+            'case_number'      => $this->request->getPost('case_number'),
+            'incident_type'    => $this->request->getPost('incident_type'),
+            'incident_date'    => $this->request->getPost('incident_date'),
+            'complainant_name' => $this->request->getPost('complainant_name'),
+            'respondent_name'  => $this->request->getPost('respondent_name'),
+            'incident_location'=> $this->request->getPost('incident_location'),
+            'status'           => $this->request->getPost('status') ?: 'Ongoing',
+            'narrative'        => $this->request->getPost('narrative'),
+            'action_taken'     => $this->request->getPost('action_taken'),
+        ];
+
+        if (
+            empty($data['incident_type']) ||
+            empty($data['incident_date']) ||
+            empty($data['complainant_name']) ||
+            empty($data['respondent_name'])
+        ) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Required fields are missing.',
+            ]);
+        }
+
+        if ($this->blotterModel->update($id, $data)) {
+            return $this->response->setJSON([
+                'status'    => 'success',
+                'message'   => 'Blotter record updated successfully.',
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status'    => 'error',
+            'message'   => 'Failed to update blotter record.',
+            'csrf_hash' => csrf_hash()
+        ]);
+    }
+
+    // ==============================
+    // DELETE BLOTTER
+    // ==============================
     public function delete($id)
     {
         if ($this->blotterModel->delete($id)) {
-            return $this->respond(['status' => 'success', 'message' => 'Deleted successfully']);
+            return $this->response->setJSON([
+                'status'    => 'success',
+                'message'   => 'Blotter record deleted successfully.',
+                'csrf_hash' => csrf_hash()
+            ]);
         }
-        return $this->fail('Delete failed');
+
+        return $this->response->setJSON([
+            'status'    => 'error',
+            'message'   => 'Failed to delete blotter record.',
+            'csrf_hash' => csrf_hash()
+        ]);
     }
-};
+}

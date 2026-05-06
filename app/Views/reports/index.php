@@ -183,6 +183,53 @@
         </div>
       </div>
 
+      <div class="row">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Latest Blotter Complaints</h3>
+              <div class="card-tools">
+                <a href="<?= base_url('blotter') ?>" class="btn btn-sm btn-outline-primary">View All Blotter Records</a>
+              </div>
+            </div>
+            <div class="card-body p-0">
+              <table class="table table-sm table-striped mb-0">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Case Number</th>
+                    <th>Type</th>
+                    <th>Complainant</th>
+                    <th>Respondent</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php if (!empty($latest_blotter_records)): ?>
+                    <?php foreach ($latest_blotter_records as $index => $record): ?>
+                      <tr>
+                        <td><?= $index + 1 ?></td>
+                        <td><?= esc($record['case_number']) ?></td>
+                        <td><?= esc($record['incident_type']) ?></td>
+                        <td><?= esc($record['complainant_name']) ?></td>
+                        <td><?= esc($record['respondent_name']) ?></td>
+                        <td><?= esc($record['incident_location']) ?></td>
+                        <td><?= esc($record['status']) ?></td>
+                        <td><?= esc($record['incident_date']) ?></td>
+                      </tr>
+                    <?php endforeach; ?>
+                  <?php else: ?>
+                    <tr><td colspan="8" class="text-center">No blotter complaints found.</td></tr>
+                  <?php endif; ?>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </section>
 </div>
@@ -191,7 +238,7 @@
 <?= $this->section('scripts') ?>
 <script> const baseUrl = "<?= base_url() ?>"; </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="<?= base_url('assets/js/reports.js') ?>"></script>
+<script src="<?= base_url('js/reports/reports.js') ?>"></script>
 <script>
 // Pass PHP data to JS
 const genderData    = <?= json_encode($residents_by_gender) ?>;

@@ -33,7 +33,7 @@ class Reports extends Controller
 
         // Blotter by type
         $data['blotter_by_type'] = $db->query(
-            "SELECT complaint_type, COUNT(*) as total FROM blotter GROUP BY complaint_type ORDER BY total DESC LIMIT 5"
+            "SELECT incident_type, COUNT(*) as total FROM blotter GROUP BY incident_type ORDER BY total DESC LIMIT 5"
         )->getResultArray();
 
         // Blotter by status
@@ -59,6 +59,13 @@ class Reports extends Controller
         $data['indigents_by_category'] = $db->query(
             "SELECT indigency_category, COUNT(*) as total FROM indigents GROUP BY indigency_category"
         )->getResultArray();
+
+        // Latest blotter complaints
+        $data['latest_blotter_records'] = $db->table('blotter')
+            ->orderBy('incident_date', 'DESC')
+            ->limit(10)
+            ->get()
+            ->getResultArray();
 
         return view('reports/index', $data);
     }

@@ -9,37 +9,63 @@ class IndigentsModel extends Model
     protected $table      = 'indigents';
     protected $primaryKey = 'id';
 
-    protected $useTimestamps = false; // indigents table has only created_at
-
+    // ✅ resident_name is GENERATED — never include it here
     protected $allowedFields = [
-        'resident_id', 'indigency_category', 'assistance_type',
-        'assistance_amount', 'date_assessed', 'date_provided', 'status',
+        'first_name',
+        'middle_name',
+        'last_name',
+        'indigency_category',
+        'assistance_type',
+        'assistance_amount',
+        'date_assessed',
+        'date_provided',
+        'status',
     ];
 
-    public function getRecords($start, $length, $searchValue = '')
-    {
-        $builder = $this->db->table('indigents i');
-        $builder->select(
-            'i.*, CONCAT(r.first_name, " ", r.last_name) AS resident_name'
-        );
-        $builder->join('residents r', 'r.id = i.resident_id', 'left');
+    protected $useTimestamps = true;
+    protected $createdField  = 'created_at';
+    protected $updatedField  = 'updated_at';
+    protected $deletedField  = 'deleted_at';
+    protected $useSoftDeletes = true;
 
-        if (!empty($searchValue)) {
-            $builder->groupStart()
-                ->like('i.indigency_category', $searchValue)
-                ->orLike('i.assistance_type', $searchValue)
-                ->orLike('i.status', $searchValue)
-                ->orLike('r.first_name', $searchValue)
-                ->orLike('r.last_name', $searchValue)
-                ->groupEnd();
+    public function getRecords(int $start, int $length, string $search = ''): array
+    {
+        // ✅ Use a subquery so ROW_NUMBER() doesn't conflict with countAllResults
+        $db = \Config\Database::connect();
+
+        $inner = $db->table($this->table)
+                    ->select('id, first_name, middle_name, last_name, resident_name,
+                              indigency_category, assistance_type, assistance_amount,
+                              date_assessed, date_provided, status, created_at')
+                    ->where('deleted_at IS NULL');
+
+        if ($search !== '') {
+            $inner->groupStart()
+                  ->like('first_name', $search)
+                  ->orLike('last_name', $search)
+                  ->orLike('resident_name', $search)
+                  ->orLike('indigency_category', $search)
+                  ->orLike('assistance_type', $search)
+                  ->groupEnd();
         }
 
-        $filteredBuilder = clone $builder;
-        $filteredRecords = $filteredBuilder->countAllResults();
+        // Count filtered (clone before adding limit)
+        $totalFiltered = (clone $inner)->countAllResults();
 
-        $builder->limit($length, $start);
-        $data = $builder->get()->getResultArray();
+        // Fetch paginated rows with row number via PHP
+        $rows = $inner->orderBy('id', 'DESC')
+                      ->limit($length, $start)
+                      ->get()
+                      ->getResultArray();
 
-        return ['data' => $data, 'filtered' => $filteredRecords];
+        // Add row_number manually (avoids OVER() compatibility issues)
+        foreach ($rows as $i => &$row) {
+            $row['row_number'] = $start + $i + 1;
+        }
+
+        return [
+            'data'     => $rows,
+            'filtered' => $totalFiltered,
+        ];
     }
 }

@@ -24,8 +24,8 @@ class Dashboard extends BaseController
         $data = [
             'totalResidents'  => $residentsModel->countAll(),
             'activeOfficials' => $this->db->table('barangay_officials')->where('status', 'active')->countAllResults(),
-            'pendingBlotter'  => $this->db->table('blotter')->where('status', 'pending')->countAllResults(),
-            'activePermits'   => $this->db->table('permits')->where('status', 'active')->countAllResults(),
+            'totalBlotter'    => $this->db->table('blotter')->countAllResults(),
+            'totalPermits'    => $this->db->table('permits')->countAllResults(),
         ];
 
         return view('dashboard', $data);
@@ -38,8 +38,8 @@ class Dashboard extends BaseController
         return $this->response->setJSON([
             'residents'       => $residentsModel->countAll(),
             'officials'       => $this->db->table('barangay_officials')->where('status', 'active')->countAllResults(),
-            'pendingBlotter'  => $this->db->table('blotter')->where('status', 'pending')->countAllResults(),
-            'businessPermits' => $this->db->table('permits')->where('status', 'active')->countAllResults(),
+            'totalBlotter'    => $this->db->table('blotter')->countAllResults(),
+            'totalPermits'    => $this->db->table('permits')->countAllResults(),
         ]);
     }
 }

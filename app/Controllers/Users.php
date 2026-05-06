@@ -48,9 +48,17 @@ class Users extends Controller
 
         if ($userModel->insert($data)) {
             $logModel->addLog('New User has been added: ' . $name, 'ADD');
-            return $this->response->setJSON(['status' => 'success']);
+            return $this->response->setJSON([
+                'status'    => 'success',
+                'message'   => 'User added successfully',
+                'csrf_hash' => csrf_hash()
+            ]);
         } else {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Failed to save user']);
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'Failed to save user',
+                'csrf_hash' => csrf_hash()
+            ]);
         }
     }
 
@@ -101,13 +109,15 @@ class Users extends Controller
         if ($updated) {
             $logModel->addLog('New User has been apdated: ' . $name, 'UPDATED');
             return $this->response->setJSON([
-                'success' => true,
-                'message' => 'User updated successfully.'
+                'success'   => true,
+                'message'   => 'User updated successfully.',
+                'csrf_hash' => csrf_hash()
             ]);
         } else {
             return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error updating user.'
+                'success'   => false,
+                'message'   => 'Error updating user.',
+                'csrf_hash' => csrf_hash()
             ]);
         }
     }
@@ -135,9 +145,17 @@ public function delete($id){
 
     if ($deleted) {
         $logModel->addLog('Delete user', 'DELETED');
-        return $this->response->setJSON(['success' => true, 'message' => 'User deleted successfully.']);
+        return $this->response->setJSON([
+            'success'   => true,
+            'message'   => 'User deleted successfully.',
+            'csrf_hash' => csrf_hash()
+        ]);
     } else {
-        return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete user.']);
+        return $this->response->setJSON([
+            'success'   => false,
+            'message'   => 'Failed to delete user.',
+            'csrf_hash' => csrf_hash()
+        ]);
     }
 }
 

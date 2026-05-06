@@ -85,10 +85,19 @@ class Clearances extends Controller
         $clearance_id = $this->clearancesModel->insert($data);
 
         if ($clearance_id) {
-            return $this->respond(['status' => 200, 'message' => 'Clearance record saved successfully', 'clearance_id' => $clearance_id]);
+            return $this->respond([
+                'status'    => 200,
+                'message'   => 'Clearance record saved successfully',
+                'clearance_id' => $clearance_id,
+                'csrf_hash' => csrf_hash()
+            ]);
         }
 
-        return $this->fail('Failed to save clearance record');
+        return $this->respond([
+            'status'    => 500,
+            'message'   => 'Failed to save clearance record',
+            'csrf_hash' => csrf_hash()
+        ], 500);
     }
 
     public function edit($id)
@@ -131,18 +140,35 @@ class Clearances extends Controller
         $result = $this->clearancesModel->update($id, $data);
 
         if ($result) {
-            return $this->respond(['status' => 200, 'message' => 'Clearance record updated successfully']);
+            return $this->respond([
+                'status'    => 200,
+                'message'   => 'Clearance record updated successfully',
+                'csrf_hash' => csrf_hash()
+            ]);
         }
 
-        return $this->fail('Failed to update clearance record');
+        return $this->respond([
+            'status'    => 500,
+            'message'   => 'Failed to update clearance record',
+            'csrf_hash' => csrf_hash()
+        ], 500);
     }
 
     public function delete($id)
     {
         $result = $this->clearancesModel->delete($id);
         if ($result) {
-            return $this->respond(['status' => 200, 'message' => 'Clearance record deleted successfully']);
+            return $this->respond([
+                'status'    => 200,
+                'message'   => 'Clearance record deleted successfully',
+                'csrf_hash' => csrf_hash()
+            ]);
         }
-        return $this->fail('Failed to delete clearance record');
+        return $this->respond([
+            'status'    => 500,
+            'message'   => 'Failed to delete clearance record',
+            'csrf_hash' => csrf_hash()
+        ], 500);
     }
 }
+

@@ -79,3 +79,4 @@ class ClearancesModel extends Model
         return $result['total'] ?? 0;
     }
 }
+

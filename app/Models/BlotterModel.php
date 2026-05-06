@@ -10,31 +10,67 @@ class BlotterModel extends Model
     protected $primaryKey = 'id';
 
     protected $allowedFields = [
-        'case_no', 'complainant', 'respondent', 'incident_type',
-        'incident_date', 'incident_place', 'narrative', 'action_taken',
-        'status', 'settled_date', 'created_at', 'updated_at', 'deleted_at'
+        'case_number',
+        'incident_type',
+        'incident_date',
+        'complainant_name',
+        'respondent_name',
+        'incident_location',
+        'status',
+        'narrative',
+        'action_taken',
     ];
 
-    public function getRecords($start, $length, $searchValue = '')
+    protected $useTimestamps = true;
+    protected $createdField  = 'created_at';
+    protected $updatedField  = 'updated_at';
+
+    public function getRecords($start, $length, $searchValue = '', $searchType = 'all')
     {
-        $builder = $this->builder();
+        $builder = $this->db->table($this->table);
         $builder->select('*');
 
+        $countBuilder = $this->db->table($this->table);
+        $countBuilder->select('id');
+
         if (!empty($searchValue)) {
-            $builder->groupStart()
-                ->like('case_no', $searchValue)
-                ->orLike('complainant', $searchValue)
-                ->orLike('respondent', $searchValue)
-                ->orLike('incident_type', $searchValue)
-                ->groupEnd();
+            $allowedTypes = ['case_number', 'incident_type', 'complainant_name', 'respondent_name', 'incident_location', 'status'];
+
+            if ($searchType !== 'all' && in_array($searchType, $allowedTypes, true)) {
+                $builder->like($searchType, $searchValue);
+                $countBuilder->like($searchType, $searchValue);
+            } else {
+                $builder->groupStart()
+                    ->like('case_number', $searchValue)
+                    ->orLike('complainant_name', $searchValue)
+                    ->orLike('respondent_name', $searchValue)
+                    ->orLike('incident_type', $searchValue)
+                    ->orLike('incident_location', $searchValue)
+                    ->orLike('status', $searchValue)
+                    ->orLike('narrative', $searchValue)
+                    ->groupEnd();
+
+                $countBuilder->groupStart()
+                    ->like('case_number', $searchValue)
+                    ->orLike('complainant_name', $searchValue)
+                    ->orLike('respondent_name', $searchValue)
+                    ->orLike('incident_type', $searchValue)
+                    ->orLike('incident_location', $searchValue)
+                    ->orLike('status', $searchValue)
+                    ->orLike('narrative', $searchValue)
+                    ->groupEnd();
+            }
         }
 
-        $filteredBuilder = clone $builder;
-        $filteredRecords = $filteredBuilder->countAllResults();
+        $filteredRecords = $countBuilder->countAllResults();
 
+        $builder->orderBy('id', 'DESC');
         $builder->limit($length, $start);
         $data = $builder->get()->getResultArray();
 
-        return ['data' => $data, 'filtered' => $filteredRecords];
+        return [
+            'data'     => $data,
+            'filtered' => $filteredRecords,
+        ];
     }
 }

@@ -17,7 +17,7 @@ class PermitsModel extends Model
         'status', 'fees_paid',
     ];
 
-    public function getRecords($start, $length, $searchValue = '')
+    public function getRecords($start, $length, $searchValue = '', $orderColumn = '', $orderDir = '')
     {
         $builder = $this->builder();
         $builder->select('*');
@@ -38,6 +38,6 @@ class PermitsModel extends Model
         $builder->limit($length, $start);
         $data = $builder->get()->getResultArray();
 
-        return ['data' => $data, 'filtered' => $filteredRecords];
+        return ['data' => $data, 'filtered' => $filteredRecords, 'recordsTotal' => $this->where('deleted_at IS NULL')->countAllResults(false)];
     }
 }

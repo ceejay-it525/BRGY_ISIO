@@ -1,159 +1,195 @@
-function showToast(type, message) {
-    if (type === 'success') {
-        toastr.success(message, 'Success');
-    } else {
-        toastr.error(message, 'Error');
+// ================= TOAST =================
+function showToast(type = 'info', message = '') {
+    if (typeof toastr === 'undefined') {
+        console[type === 'error' ? 'error' : 'log'](message);
+        alert(message);
+        return;
+    }
+
+    toastr.options = {
+        closeButton: true,
+        progressBar: true,
+        positionClass: 'toast-top-right',
+        timeOut: '3000'
+    };
+
+    toastr[type] ? toastr[type](message) : toastr.info(message);
+}
+
+function updateCsrf(response) {
+    if (!response) {
+        return;
+    }
+
+    const token = response.csrf_hash || response.csrfHash || response.csrfToken;
+    if (token) {
+        $('input[name=csrf_test_name]').val(token);
     }
 }
 
-$('#addUserForm').on('submit', function (e) {
-    e.preventDefault();
-    $.ajax({
-        url: baseUrl + 'users/save',
-        method: 'POST',
-        data: $(this).serialize(),
-        dataType: 'json',
-        success: function (response) {
-            if (response.status === 'success') {
-                $('#AddNewModal').modal('hide');
-                $('#addUserForm')[0].reset();
-                showToast('success', 'User added successfully!');
-                setTimeout(() => {
-                    location.reload();
-                }, 1000); 
-            } else {
-                showToast('error', response.message || 'Failed to add user.');
-            }
-        },
-        error: function () {
-            showToast('error', 'An error occurred.');
-        }
-    });
-});
-
-$(document).on('click', '.edit-btn', function () {
-   const userId = $(this).data('id'); 
-   $.ajax({
-    url: baseUrl + 'users/edit/' + userId,
-    method: 'GET',
-    dataType: 'json',
-    success: function (response) {
-        if (response.data) {
-            $('#editUserModal #name').val(response.data.name);
-            $('#editUserModal #userId').val(response.data.id);
-            $('#editUserModal #email').val(response.data.email);
-            $('#editUserModal #password').val('');
-            $('#editUserModal #role').val(response.data.role);
-            $('#editUserModal #status').val(response.data.status);
-            $('#editUserModal #phone').val(response.data.phone);
-            $('#editUserModal').modal('show');
-        } else {
-            alert('Error fetching user data');
-        }
-    },
-    error: function () {
-        alert('Error fetching user data');
+function reloadUsersTable() {
+    if (typeof usersTable !== 'undefined' && usersTable && usersTable.ajax) {
+        usersTable.ajax.reload(null, false);
+        return;
     }
-});
-});
 
+    const table = $('#example1').DataTable();
+    if (table && table.ajax) {
+        table.ajax.reload(null, false);
+    }
+}
+
+let usersTable;
 
 $(document).ready(function () {
-    $('#editUserForm').on('submit', function (e) {
-        e.preventDefault(); 
-
-        $.ajax({
-            url: baseUrl + 'users/update',
-            method: 'POST',
-            data: $(this).serialize(),
-            dataType: 'json',
-            success: function (response) {
-                if (response.success) {
-                    $('#editUserModal').modal('hide');
-                    showToast('success', 'User Updated successfully!');
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    alert('Error updating: ' + (response.message || 'Unknown error'));
-                }
-            },
-            error: function (xhr) {
-                alert('Error updating');
-                console.error(xhr.responseText);
-            }
-        });
-    });
-});
-
-$(document).on('click', '.deleteUserBtn', function () {
-    const userId = $(this).data('id');
-    const csrfName = $('meta[name="csrf-name"]').attr('content');
-    const csrfToken = $('meta[name="csrf-token"]').attr('content');
-
-    if (confirm('Are you sure you want to delete this user?')) {
-        $.ajax({
-            url: baseUrl + 'users/delete/' + userId,
-            method: 'POST', 
-            data: {
-                _method: 'DELETE',
-                [csrfName]: csrfToken
-            },
-            success: function (response) {
-                if (response.success) {
-                    showToast('success', 'Users deleted successfully.');
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    alert(response.message || 'Failed to delete.');
-                }
-            },
-            error: function () {
-                alert('Something went wrong while deleting.');
-            }
-        });
+    if ($.fn.DataTable.isDataTable('#example1')) {
+        $('#example1').DataTable().destroy();
     }
-});
 
-$(document).ready(function () {
-    const $table = $('#example1');
-
-    const csrfName = 'csrf_test_name'; 
-    const csrfToken = $('input[name="' + csrfName + '"]').val();
-
-    $table.DataTable({
+    usersTable = $('#example1').DataTable({
         processing: true,
         serverSide: true,
+        responsive: true,
         ajax: {
             url: baseUrl + 'users/fetchRecords',
             type: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': csrfToken
+            dataType: 'json',
+            data: function (d) {
+                d.csrf_test_name = $('input[name=csrf_test_name]').val();
+            },
+            error: function (xhr) {
+                console.log(xhr.responseText);
+                showToast('error', 'Datatable error');
             }
         },
         columns: [
-        { data: 'row_number' },
-        { data: 'id', visible: false },
-        { data: 'name' },
-        { data: 'email' },
-        { data: 'role' },
-        { data: 'status' },
-        { data: 'phone' },
-        { data: 'created_at' },
-        {
-            data: null,
-            orderable: false,
-            searchable: false,
-            render: function (data, type, row) {
-                return `
-                <button class="btn btn-sm btn-warning edit-btn" data-id="${row.id}">
-                <i class="far fa-edit"></i>
-                </button>
-                <button class="btn btn-sm btn-danger deleteUserBtn" data-id="${row.id}">
-                <i class="fas fa-trash-alt"></i>
-                </button>
-                `;
+            { data: 'row_number' },
+            { data: 'id', visible: false },
+            { data: 'name' },
+            { data: 'email' },
+            { data: 'role' },
+            { data: 'status' },
+            { data: 'phone', defaultContent: '' },
+            { data: 'created_at', defaultContent: '' },
+            {
+                data: null,
+                orderable: false,
+                searchable: false,
+                render: function (row) {
+                    return `
+                        <button class="btn btn-sm btn-warning edit-btn" data-id="${row.id}">
+                            <i class="far fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger deleteUserBtn" data-id="${row.id}">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    `;
+                }
             }
+        ]
+    });
+});
+
+// ================= ADD =================
+$('#addUserForm').on('submit', function (e) {
+    e.preventDefault();
+
+    $.post(baseUrl + 'users/save', $(this).serialize(), function (response) {
+        const success = response.status === 'success';
+
+        if (success) {
+            $('#AddNewModal').modal('hide');
+            $('#addUserForm')[0].reset();
+            showToast('success', response.message || 'User added successfully');
+            reloadUsersTable();
+        } else {
+            showToast('error', response.message || 'Failed to add user');
         }
-        ],
-        responsive: true,
-        autoWidth: false
+
+        updateCsrf(response);
+    }, 'json').fail(function (xhr) {
+        console.log(xhr.responseText);
+        showToast('error', 'Server error');
+    });
+});
+
+// ================= EDIT =================
+$(document).on('click', '.edit-btn', function () {
+    const id = $(this).data('id');
+    if (!id) {
+        showToast('error', 'Invalid user ID');
+        return;
+    }
+
+    $.get(baseUrl + 'users/edit/' + id, function (response) {
+        if (response && response.data) {
+            const data = response.data;
+            $('#editUserModal #userId').val(data.id);
+            $('#editUserModal #name').val(data.name || '');
+            $('#editUserModal #email').val(data.email || '');
+            $('#editUserModal #password').val('');
+            $('#editUserModal #role').val(data.role || '');
+            $('#editUserModal #status').val(data.status || '');
+            $('#editUserModal #phone').val(data.phone || '');
+            $('#editUserModal').modal('show');
+        } else {
+            showToast('error', 'User not found');
+        }
+    }, 'json').fail(function (xhr) {
+        console.log(xhr.responseText);
+        showToast('error', 'Failed to load user');
+    });
+});
+
+// ================= UPDATE =================
+$('#editUserForm').on('submit', function (e) {
+    e.preventDefault();
+
+    $.post(baseUrl + 'users/update', $(this).serialize(), function (response) {
+        const success = response.success === true;
+
+        if (success) {
+            $('#editUserModal').modal('hide');
+            $('#editUserForm')[0].reset();
+            showToast('success', response.message || 'User updated successfully');
+            reloadUsersTable();
+        } else {
+            showToast('error', response.message || 'Failed to update user');
+        }
+
+        updateCsrf(response);
+    }, 'json').fail(function (xhr) {
+        console.log(xhr.responseText);
+        showToast('error', 'Server error');
+    });
+});
+
+// ================= DELETE =================
+$(document).on('click', '.deleteUserBtn', function () {
+    const id = $(this).data('id');
+
+    if (!id) {
+        showToast('error', 'Invalid user ID');
+        return;
+    }
+
+    if (!confirm('Delete this user?')) {
+        return;
+    }
+
+    $.post(baseUrl + 'users/delete/' + id, { csrf_test_name: $('input[name=csrf_test_name]').val() }, function (response) {
+        const success = response.success === true;
+
+        if (success) {
+            showToast('success', response.message || 'User deleted successfully');
+            reloadUsersTable();
+        } else {
+            showToast('error', response.message || 'Failed to delete user');
+        }
+
+        updateCsrf(response);
+    }, 'json').fail(function (xhr) {
+        console.log(xhr.responseText);
+        showToast('error', 'Server error');
     });
 });

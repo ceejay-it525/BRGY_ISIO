@@ -36,7 +36,7 @@
   <?= $this->renderSection('content') ?>
 
  <footer class="main-footer no-print">
-    <strong>Copyright &copy; 2025 <a href="#">Glenn IT Solutions</a> </strong>
+    <strong>Copyright &copy; 2026 <a href="#">Cymone IT yarn</a> </strong>
     All rights reserved.
     <div class="float-right d-none d-sm-inline-block">
       <b>Version</b> CI4.v1
@@ -90,6 +90,7 @@
 <script src="<?= base_url('assets/adminlte/plugins/datatables-buttons/js/buttons.print.min.js') ?>"></script>
 <script src="<?= base_url('assets/adminlte/plugins/datatables-buttons/js/buttons.colVis.min.js') ?>"></script>
 <script src="<?= base_url('assets/adminlte/plugins/toastr/toastr.min.js') ?>"></script>
+<script src="<?= base_url('assets/adminlte/plugins/sweetalert2/sweetalert2.min.js') ?>"></script>
 <?= $this->renderSection('scripts') ?>
 </body>
 </html>

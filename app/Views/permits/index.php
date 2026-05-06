@@ -247,5 +247,5 @@
 
 <?= $this->section('scripts') ?>
 <script> const baseUrl = "<?= base_url() ?>"; </script>
-<script src="<?= base_url('assets/js/permits.js') ?>"></script>
+<script src="<?= base_url('js/permits/permits.js') ?>"></script>
 <?= $this->endSection() ?>

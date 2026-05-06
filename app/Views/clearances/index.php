@@ -188,5 +188,5 @@
 
 <?= $this->section('scripts') ?>
 <script> const baseUrl = "<?= base_url() ?>"; </script>
-<script src="<?= base_url('assets/js/clearances.js') ?>"></script>
+<script src="<?= base_url('js/clearances/clearances.js') ?>"></script>
 <?= $this->endSection() ?>

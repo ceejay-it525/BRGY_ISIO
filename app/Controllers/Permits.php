@@ -23,114 +23,144 @@ class Permits extends BaseController
 
     public function fetchRecords()
     {
-        $draw        = $this->request->getPost('draw');
-        $start       = $this->request->getPost('start');
-        $length      = $this->request->getPost('length');
-        $searchValue = $this->request->getPost('search')['value'];
-        $orderColumn = $this->request->getPost('order')[0]['column'];
-        $orderDir    = $this->request->getPost('order')[0]['dir'];
+        $request = service('request');
 
-        $result = $this->permitsModel->getRecords($start, $length, $searchValue, $orderColumn, $orderDir);
+        $draw   = (int) $request->getPost('draw');
+        $start  = (int) $request->getPost('start');
+        $length = (int) $request->getPost('length');
+
+        $search      = $request->getPost('search');
+        $searchValue = $search['value'] ?? '';
+
+        $result = $this->permitsModel->getRecords($start, $length, $searchValue);
 
         $counter = $start + 1;
         foreach ($result['data'] as &$row) {
-            $row['row_number']       = $counter++;
-            $row['application_date'] = $row['application_date'] ? date('M d, Y', strtotime($row['application_date'])) : '';
-            $row['issued_date']      = $row['issued_date'] ? date('M d, Y', strtotime($row['issued_date'])) : '-';
-            $row['expiry_date']      = $row['expiry_date'] ? date('M d, Y', strtotime($row['expiry_date'])) : '-';
-            $row['fee_amount']       = number_format((float) $row['fee_amount'], 2);
+            $row['row_number'] = $counter++;
         }
 
-        return $this->respond([
+        return $this->response->setJSON([
             'draw'            => $draw,
             'recordsTotal'    => $result['recordsTotal'],
-            'recordsFiltered' => $result['recordsFiltered'],
-            'data'            => $result['data'],
+            'recordsFiltered' => $result['filtered'],
+            'data'            => $result['data']
         ]);
     }
 
     public function save()
     {
-        if (!$this->validate([
-            'permit_type'      => 'required|in_list[Business Permit,Building Permit,Excavation Permit,Burial Permit]',
-            'resident_id'      => 'required|is_natural_no_zero',
-            'application_date' => 'required|valid_date',
-            'permit_status'    => 'required|in_list[Pending,Approved,Released,Rejected,Expired,Revoked]',
-        ])) {
-            return $this->failValidationErrors($this->validator->getErrors());
-        }
-
         $data = [
-            'permit_number'      => $this->permitsModel->generatePermitNumber(),
-            'permit_type'        => $this->request->getPost('permit_type'),
-            'resident_id'        => $this->request->getPost('resident_id'),
-            'business_name'      => $this->request->getPost('business_name'),
-            'business_address'   => $this->request->getPost('business_address'),
-            'business_nature'    => $this->request->getPost('business_nature'),
-            'capital_investment' => $this->request->getPost('capital_investment') ?: null,
-            'purpose'            => $this->request->getPost('purpose'),
-            'application_date'   => $this->request->getPost('application_date'),
-            'issued_date'        => $this->request->getPost('issued_date') ?: null,
-            'expiry_date'        => $this->request->getPost('expiry_date') ?: null,
-            'fee_amount'         => $this->request->getPost('fee_amount') ?: 0,
-            'or_number'          => $this->request->getPost('or_number'),
-            'remarks'            => $this->request->getPost('remarks'),
-            'permit_status'      => $this->request->getPost('permit_status'),
-            'status'             => 'Active',
+            'business_name'     => $this->request->getPost('business_name'),
+            'owner_name'        => $this->request->getPost('owner_name'),
+            'business_address'  => $this->request->getPost('business_address'),
+            'business_type'     => $this->request->getPost('business_type'),
+            'permit_type'       => $this->request->getPost('permit_type'),
+            'issue_date'        => $this->request->getPost('issue_date'),
+            'expiry_date'       => $this->request->getPost('expiry_date'),
+            'status'            => $this->request->getPost('status'),
+            'fees_paid'         => $this->request->getPost('fees_paid') ?: 0,
         ];
+
+        if (empty($data['business_name']) || empty($data['owner_name']) || empty($data['business_address'])) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Business Name, Owner Name, and Address are required'
+            ]);
+        }
 
         if ($this->permitsModel->insert($data)) {
-            return $this->respondCreated(['status' => 'success', 'message' => 'Permit added successfully']);
+            return $this->response->setJSON([
+                'status'    => 'success',
+                'message'   => 'Permit saved successfully',
+                'csrf_hash' => csrf_hash()
+            ]);
         }
-        return $this->fail('Failed to add permit');
+
+        return $this->response->setJSON([
+            'status'    => 'error',
+            'message'   => 'Failed to save permit',
+            'csrf_hash' => csrf_hash()
+        ]);
     }
 
-    public function edit($id)
+    public function get($id)
     {
-        $record = $this->permitsModel->find($id);
-        if ($record) return $this->respond($record);
-        return $this->failNotFound('Permit not found');
+        $permit = $this->permitsModel->find($id);
+
+        if ($permit) {
+            return $this->response->setJSON([
+                'status' => 'success',
+                'data'   => $permit
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status'  => 'error',
+            'message' => 'Permit not found'
+        ]);
     }
 
-    public function update($id)
+    public function update()
     {
-        if (!$this->validate([
-            'permit_type'      => 'required|in_list[Business Permit,Building Permit,Excavation Permit,Burial Permit]',
-            'resident_id'      => 'required|is_natural_no_zero',
-            'application_date' => 'required|valid_date',
-            'permit_status'    => 'required|in_list[Pending,Approved,Released,Rejected,Expired,Revoked]',
-        ])) {
-            return $this->failValidationErrors($this->validator->getErrors());
+        $id = $this->request->getPost('id');
+
+        if (empty($id)) {
+            return $this->response->setJSON([
+                'status'      => 'error',
+                'message'     => 'Invalid permit ID',
+                'csrf_hash'   => csrf_hash()
+            ]);
         }
 
         $data = [
-            'permit_type'        => $this->request->getPost('permit_type'),
-            'resident_id'        => $this->request->getPost('resident_id'),
-            'business_name'      => $this->request->getPost('business_name'),
-            'business_address'   => $this->request->getPost('business_address'),
-            'business_nature'    => $this->request->getPost('business_nature'),
-            'capital_investment' => $this->request->getPost('capital_investment') ?: null,
-            'purpose'            => $this->request->getPost('purpose'),
-            'application_date'   => $this->request->getPost('application_date'),
-            'issued_date'        => $this->request->getPost('issued_date') ?: null,
-            'expiry_date'        => $this->request->getPost('expiry_date') ?: null,
-            'fee_amount'         => $this->request->getPost('fee_amount') ?: 0,
-            'or_number'          => $this->request->getPost('or_number'),
-            'remarks'            => $this->request->getPost('remarks'),
-            'permit_status'      => $this->request->getPost('permit_status'),
+            'business_name'     => $this->request->getPost('business_name'),
+            'owner_name'        => $this->request->getPost('owner_name'),
+            'business_address'  => $this->request->getPost('business_address'),
+            'business_type'     => $this->request->getPost('business_type'),
+            'permit_type'       => $this->request->getPost('permit_type'),
+            'issue_date'        => $this->request->getPost('issue_date'),
+            'expiry_date'       => $this->request->getPost('expiry_date'),
+            'status'            => $this->request->getPost('status'),
+            'fees_paid'         => $this->request->getPost('fees_paid') ?: 0,
         ];
 
-        if ($this->permitsModel->update($id, $data)) {
-            return $this->respond(['status' => 'success', 'message' => 'Permit updated successfully']);
+        if (empty($data['business_name']) || empty($data['owner_name']) || empty($data['business_address'])) {
+            return $this->response->setJSON([
+                'status'      => 'error',
+                'message'     => 'Business Name, Owner Name, and Address are required',
+                'csrf_hash'   => csrf_hash()
+            ]);
         }
-        return $this->fail('Failed to update permit');
+
+        if ($this->permitsModel->update($id, $data)) {
+            return $this->response->setJSON([
+                'status'      => 'success',
+                'message'     => 'Permit updated successfully',
+                'csrf_hash'   => csrf_hash()
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status'      => 'error',
+            'message'     => 'Failed to update permit',
+            'csrf_hash'   => csrf_hash()
+        ]);
     }
 
     public function delete($id)
     {
         if ($this->permitsModel->delete($id)) {
-            return $this->respond(['status' => 'success', 'message' => 'Permit deleted successfully']);
+            return $this->response->setJSON([
+                'status'      => 'success',
+                'message'     => 'Permit deleted successfully',
+                'csrf_hash'   => csrf_hash()
+            ]);
         }
-        return $this->fail('Failed to delete permit');
+
+        return $this->response->setJSON([
+            'status'      => 'error',
+            'message'     => 'Failed to delete permit',
+            'csrf_hash'   => csrf_hash()
+        ]);
     }
 }

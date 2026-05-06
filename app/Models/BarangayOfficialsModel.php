@@ -10,32 +10,31 @@ class BarangayOfficialsModel extends Model
     protected $primaryKey = 'id';
 
     protected $allowedFields = [
-        'first_name', 'middle_name', 'last_name', 'suffix',
-        'position', 'committee', 'term_start', 'term_end',
-        'contact_number', 'status',
-        'created_at', 'updated_at', 'deleted_at'
+        'first_name', 'middle_name', 'last_name', 'position', 
+        'term_start', 'term_end', 'contact_number', 'email', 
+        'address', 'status', 'photo'
     ];
 
-    public function getRecords($start, $length, $searchValue = '')
-    {
-        $builder = $this->builder();
-        $builder->select('*');
+   public function getRecords($start, $length, $search = '')
+{
+    $builder = $this->builder();
 
-        if (!empty($searchValue)) {
-            $builder->groupStart()
-                ->like('first_name', $searchValue)
-                ->orLike('last_name', $searchValue)
-                ->orLike('position', $searchValue)
-                ->orLike('committee', $searchValue)
-                ->groupEnd();
-        }
-
-        $filteredBuilder = clone $builder;
-        $filteredRecords = $filteredBuilder->countAllResults();
-
-        $builder->limit($length, $start);
-        $data = $builder->get()->getResultArray();
-
-        return ['data' => $data, 'filtered' => $filteredRecords];
+    if ($search) {
+        $builder->groupStart()
+            ->like('first_name', $search)
+            ->orLike('middle_name', $search)
+            ->orLike('last_name', $search)
+            ->orLike('position', $search)
+            ->groupEnd();
     }
+
+    $filtered = $builder->countAllResults(false);
+
+    $builder->limit($length, $start);
+
+    return [
+        'data' => $builder->get()->getResultArray(),
+        'filtered' => $filtered
+    ];
+}
 }

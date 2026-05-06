@@ -3,11 +3,16 @@
 namespace App\Controllers;
 
 use App\Models\IndigentsModel;
-use CodeIgniter\Controller;
-use App\Models\LogModel;
 
-class Indigents extends Controller
+class Indigents extends BaseController
 {
+    protected $indigentModel;
+
+    public function __construct()
+    {
+        $this->indigentModel = new IndigentsModel();
+    }
+
     public function index()
     {
         return view('indigents/index');
@@ -15,118 +20,154 @@ class Indigents extends Controller
 
     public function save()
     {
-        $model = new IndigentsModel();
-        $logModel = new LogModel();
+        $data = $this->request->getPost();
 
-        $resident_id      = $this->request->getPost('resident_id');
-        $indigency_category = $this->request->getPost('indigency_category');
-
-        if (!$resident_id || !$indigency_category) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Resident and indigency category are required']);
+        if (empty($data['first_name']) || empty($data['last_name']) || empty($data['indigency_category'])) {
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'First Name, Last Name, and Indigency Category are required',
+                'csrf_hash' => csrf_hash()
+            ]);
         }
 
-        $data = [
-            'resident_id'        => $resident_id,
-            'indigency_category' => $indigency_category,
-            'assistance_type'    => $this->request->getPost('assistance_type'),
-            'assistance_amount'  => $this->request->getPost('assistance_amount') ?: null,
-            'date_assessed'      => $this->request->getPost('date_assessed') ?: null,
-            'date_provided'      => $this->request->getPost('date_provided') ?: null,
-            'status'             => $this->request->getPost('status'),
-        ];
+        // ✅ Do NOT set resident_name — it's a GENERATED column in the DB
+        unset($data['resident_name']);
 
-        if ($model->insert($data)) {
-            $logModel->addLog('New Indigent record added for Resident ID: ' . $resident_id, 'ADD');
-            return $this->response->setJSON(['status' => 'success']);
-        } else {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Failed to save indigent record']);
+        $data['assistance_amount'] = floatval($data['assistance_amount'] ?? 0);
+
+        // Sanitize empty dates to null
+        $data['date_assessed'] = !empty($data['date_assessed']) ? $data['date_assessed'] : null;
+        $data['date_provided']  = !empty($data['date_provided'])  ? $data['date_provided']  : null;
+
+        if ($this->indigentModel->insert($data)) {
+            return $this->response->setJSON([
+                'status'    => 'success',
+                'message'   => 'Record saved successfully!',
+                'csrf_hash' => csrf_hash()
+            ]);
         }
+
+        return $this->response->setJSON([
+            'status'    => 'error',
+            'message'   => 'Failed to save record. ' . implode(' ', $this->indigentModel->errors()),
+            'csrf_hash' => csrf_hash()
+        ]);
     }
 
     public function edit($id)
     {
-        $model = new IndigentsModel();
-        $record = $model->find($id);
+        $record = $this->indigentModel->find($id);
 
-        if ($record) {
-            return $this->response->setJSON(['data' => $record]);
-        } else {
-            return $this->response->setStatusCode(404)->setJSON(['error' => 'Record not found']);
+        if (!$record) {
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'Record not found',
+                'csrf_hash' => csrf_hash()
+            ]);
         }
+
+        return $this->response->setJSON([
+            'data'      => $record,
+            'csrf_hash' => csrf_hash()
+        ]);
     }
 
     public function update()
     {
-        $model = new IndigentsModel();
-        $logModel = new LogModel();
+        $id   = $this->request->getPost('id');
+        $data = $this->request->getPost();
 
-        $id          = $this->request->getPost('id');
-        $resident_id = $this->request->getPost('resident_id');
-
-        if (empty($resident_id)) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Resident is required']);
+        if (empty($id)) {
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'Invalid record ID',
+                'csrf_hash' => csrf_hash()
+            ]);
         }
 
-        $data = [
-            'resident_id'        => $resident_id,
-            'indigency_category' => $this->request->getPost('indigency_category'),
-            'assistance_type'    => $this->request->getPost('assistance_type'),
-            'assistance_amount'  => $this->request->getPost('assistance_amount') ?: null,
-            'date_assessed'      => $this->request->getPost('date_assessed') ?: null,
-            'date_provided'      => $this->request->getPost('date_provided') ?: null,
-            'status'             => $this->request->getPost('status'),
-        ];
-
-        if ($model->update($id, $data)) {
-            $logModel->addLog('Indigent record updated: ID ' . $id, 'UPDATED');
-            return $this->response->setJSON(['success' => true, 'message' => 'Indigent record updated successfully.']);
-        } else {
-            return $this->response->setJSON(['success' => false, 'message' => 'Error updating indigent record.']);
+        if (empty($data['first_name']) || empty($data['last_name'])) {
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'First Name and Last Name are required',
+                'csrf_hash' => csrf_hash()
+            ]);
         }
+
+        // ✅ Do NOT set resident_name — it's a GENERATED column in the DB
+        unset($data['resident_name']);
+        unset($data['id']); // remove id from data array, we pass it separately
+
+        $data['assistance_amount'] = floatval($data['assistance_amount'] ?? 0);
+
+        // Sanitize empty dates to null
+        $data['date_assessed'] = !empty($data['date_assessed']) ? $data['date_assessed'] : null;
+        $data['date_provided']  = !empty($data['date_provided'])  ? $data['date_provided']  : null;
+
+        if ($this->indigentModel->update($id, $data)) {
+            return $this->response->setJSON([
+                'status'    => 'success',
+                'message'   => 'Record updated successfully!',
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status'    => 'error',
+            'message'   => 'Failed to update record. ' . implode(' ', $this->indigentModel->errors()),
+            'csrf_hash' => csrf_hash()
+        ]);
     }
 
     public function delete($id)
     {
-        $model = new IndigentsModel();
-        $logModel = new LogModel();
+        if (empty($id)) {
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'Invalid record ID',
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
 
-        $record = $model->find($id);
+        $record = $this->indigentModel->find($id);
+
         if (!$record) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Record not found.']);
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'Record not found',
+                'csrf_hash' => csrf_hash()
+            ]);
         }
 
-        if ($model->delete($id)) {
-            $logModel->addLog('Indigent record deleted: ID ' . $id, 'DELETED');
-            return $this->response->setJSON(['success' => true, 'message' => 'Indigent record deleted successfully.']);
-        } else {
-            return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete indigent record.']);
+        if ($this->indigentModel->delete($id)) {
+            return $this->response->setJSON([
+                'status'    => 'success',
+                'message'   => 'Record deleted successfully!',
+                'csrf_hash' => csrf_hash()
+            ]);
         }
+
+        return $this->response->setJSON([
+            'status'    => 'error',
+            'message'   => 'Failed to delete record',
+            'csrf_hash' => csrf_hash()
+        ]);
     }
 
     public function fetchRecords()
     {
-        $request = service('request');
-        $model = new IndigentsModel();
+        $draw   = intval($this->request->getPost('draw') ?? 1);
+        $start  = intval($this->request->getPost('start') ?? 0);
+        $length = intval($this->request->getPost('length') ?? 25);
+        $search = $this->request->getPost('search')['value'] ?? '';
 
-        $start       = $request->getPost('start') ?? 0;
-        $length      = $request->getPost('length') ?? 10;
-        $searchValue = $request->getPost('search')['value'] ?? '';
-
-        $totalRecords = $model->countAll();
-        $result = $model->getRecords($start, $length, $searchValue);
-
-        $data = [];
-        $counter = $start + 1;
-        foreach ($result['data'] as $row) {
-            $row['row_number'] = $counter++;
-            $data[] = $row;
-        }
+        $data = $this->indigentModel->getRecords($start, $length, $search);
 
         return $this->response->setJSON([
-            'draw'            => intval($request->getPost('draw')),
-            'recordsTotal'    => $totalRecords,
-            'recordsFiltered' => $result['filtered'],
-            'data'            => $data,
+            'draw'            => $draw,
+            'recordsTotal'    => $this->indigentModel->countAllResults(),
+            'recordsFiltered' => $data['filtered'],
+            'data'            => $data['data'],
+            'csrf_hash'       => csrf_hash()
         ]);
     }
 }

@@ -3,17 +3,14 @@
 namespace App\Controllers;
 
 use App\Models\BarangayOfficialsModel;
-use CodeIgniter\API\ResponseTrait;
 
 class BarangayOfficials extends BaseController
 {
-    use ResponseTrait;
-
-    protected $officialsModel;
+    protected $model;
 
     public function __construct()
     {
-        $this->officialsModel = new BarangayOfficialsModel();
+        $this->model = new BarangayOfficialsModel();
     }
 
     public function index()
@@ -23,103 +20,135 @@ class BarangayOfficials extends BaseController
 
     public function fetchRecords()
     {
-        $draw = $this->request->getPost('draw');
-        $start = $this->request->getPost('start');
-        $length = $this->request->getPost('length');
-        $searchValue = $this->request->getPost('search')['value'];
-        $orderColumn = $this->request->getPost('order')[0]['column'];
-        $orderDir = $this->request->getPost('order')[0]['dir'];
+        $request = service('request');
 
-        $result = $this->officialsModel->getRecords($start, $length, $searchValue, $orderColumn, $orderDir);
+        $draw   = (int) $request->getPost('draw');
+        $start  = (int) $request->getPost('start');
+        $length = (int) $request->getPost('length');
+        $search = '';
 
-        $counter = $start + 1;
-        foreach ($result['data'] as &$row) {
-            $row['row_number'] = $counter++;
-            $row['full_name'] = $row['first_name'] . ' ' . ($row['middle_name'] ? $row['middle_name'] . ' ' : '') . $row['last_name'];
-            $row['term'] = date('M Y', strtotime($row['term_start'])) . ' - ' . date('M Y', strtotime($row['term_end']));
-            $row['created_at'] = date('M d, Y', strtotime($row['created_at']));
+        $searchPost = $request->getPost('search');
+        if (is_array($searchPost)) {
+            $search = $searchPost['value'] ?? '';
+        } else {
+            $search = $request->getPost('search[value]') ?? '';
         }
 
-        return $this->respond([
+        $result = $this->model->getRecords($start, $length, $search);
+
+        $data = [];
+        foreach ($result['data'] as $row) {
+            $row['full_name'] = trim("{$row['first_name']} {$row['middle_name']} {$row['last_name']}");
+            $photo = isset($row['photo']) ? $row['photo'] : null;
+            $row['photo_url'] = $photo
+                ? base_url("uploads/officials/{$photo}")
+                : '';
+            $row['term_end_display'] = $row['term_end'] ?: 'Present';
+            $row['status_badge'] = $row['status'] === 'Active'
+                ? '<span class="badge bg-success">Active</span>'
+                : '<span class="badge bg-warning">Inactive</span>';
+            $data[] = $row;
+        }
+
+        return $this->response->setJSON([
             'draw' => $draw,
-            'recordsTotal' => $result['recordsTotal'],
-            'recordsFiltered' => $result['recordsFiltered'],
-            'data' => $result['data']
+            'recordsTotal' => $this->model->countAll(),
+            'recordsFiltered' => $result['filtered'],
+            'data' => $data,
+            'csrf_hash' => csrf_hash()
         ]);
     }
 
     public function save()
     {
-        if (!$this->validate()) {
-            return $this->failValidationErrors($this->validator->getErrors());
-        }
+        $photo = $this->request->getFile('photo');
+        $data = $this->request->getPost();
 
-        $data = [
-            'first_name' => $this->request->getPost('first_name'),
-            'last_name' => $this->request->getPost('last_name'),
-            'middle_name' => $this->request->getPost('middle_name'),
-            'position' => $this->request->getPost('position'),
-            'gender' => $this->request->getPost('gender'),
-            'birthdate' => $this->request->getPost('birthdate'),
-            'address' => $this->request->getPost('address'),
-            'contact_number' => $this->request->getPost('contact_number'),
-            'email' => $this->request->getPost('email'),
-            'term_start' => $this->request->getPost('term_start'),
-            'term_end' => $this->request->getPost('term_end'),
-            'status' => $this->request->getPost('status')
-        ];
-
-        if ($this->officialsModel->insert($data)) {
-            return $this->respondCreated(['status' => 'success', 'message' => 'Barangay Official added successfully']);
-        }
-
-        return $this->fail('Failed to add official');
-    }
-
-    public function edit($id)
-    {
-        $official = $this->officialsModel->find($id);
-        if ($official) {
-            return $this->respond($official);
-        }
-        return $this->failNotFound('Official not found');
-    }
-
-    public function update($id)
-    {
         if (!$this->validate([
-            'contact_number' => 'required|min_length[10]|is_unique[barangay_officials.contact_number,id,' . $id . ']'
+            'first_name' => 'required',
+            'last_name'  => 'required',
+            'position'   => 'required',
+            'photo'      => 'permit_empty|mime_in[photo,image/jpg,image/jpeg,image/png,image/gif]|max_size[photo,2048]'
         ])) {
-            return $this->failValidationErrors($this->validator->getErrors());
+            return $this->fail('Validation failed');
         }
 
-        $data = [
-            'first_name' => $this->request->getPost('first_name'),
-            'last_name' => $this->request->getPost('last_name'),
-            'middle_name' => $this->request->getPost('middle_name'),
-            'position' => $this->request->getPost('position'),
-            'gender' => $this->request->getPost('gender'),
-            'birthdate' => $this->request->getPost('birthdate'),
-            'address' => $this->request->getPost('address'),
-            'contact_number' => $this->request->getPost('contact_number'),
-            'email' => $this->request->getPost('email'),
-            'term_start' => $this->request->getPost('term_start'),
-            'term_end' => $this->request->getPost('term_end'),
-            'status' => $this->request->getPost('status')
-        ];
-
-        if ($this->officialsModel->update($id, $data)) {
-            return $this->respond(['status' => 'success', 'message' => 'Barangay Official updated successfully']);
+        if ($photo && $photo->isValid() && !$photo->hasMoved()) {
+            $destination = FCPATH . 'uploads/officials/';
+            if (!is_dir($destination)) {
+                mkdir($destination, 0755, true);
+            }
+            $photoName = $photo->getRandomName();
+            $photo->move($destination, $photoName);
+            $data['photo'] = $photoName;
         }
 
-        return $this->fail('Failed to update official');
+        $this->model->insert($data);
+
+        return $this->response->setJSON([
+            'status'    => 'success',
+            'message'   => 'Saved successfully',
+            'csrf_hash' => csrf_hash()
+        ]);
+    }
+
+    public function get($id)
+    {
+        $data = $this->model->find($id);
+
+        if (!$data) {
+            return $this->failNotFound('Not found');
+        }
+
+        return $this->response->setJSON([
+            'status'    => 'success',
+            'data'      => $data,
+            'csrf_hash' => csrf_hash()
+        ]);
+    }
+
+    public function update()
+    {
+        $id = $this->request->getPost('id');
+        $photo = $this->request->getFile('photo');
+        $data = $this->request->getPost();
+
+        if (!$this->validate([
+            'first_name' => 'required',
+            'last_name'  => 'required',
+            'position'   => 'required',
+            'photo'      => 'permit_empty|mime_in[photo,image/jpg,image/jpeg,image/png,image/gif]|max_size[photo,2048]'
+        ])) {
+            return $this->fail('Validation failed');
+        }
+
+        if ($photo && $photo->isValid() && !$photo->hasMoved()) {
+            $destination = FCPATH . 'uploads/officials/';
+            if (!is_dir($destination)) {
+                mkdir($destination, 0755, true);
+            }
+            $photoName = $photo->getRandomName();
+            $photo->move($destination, $photoName);
+            $data['photo'] = $photoName;
+        }
+
+        $this->model->update($id, $data);
+
+        return $this->response->setJSON([
+            'status'    => 'success',
+            'message'   => 'Updated successfully',
+            'csrf_hash' => csrf_hash()
+        ]);
     }
 
     public function delete($id)
     {
-        if ($this->officialsModel->delete($id)) {
-            return $this->respond(['status' => 'success', 'message' => 'Barangay Official deleted successfully']);
-        }
-        return $this->fail('Failed to delete official');
+        $this->model->delete($id);
+
+        return $this->response->setJSON([
+            'status'    => 'success',
+            'message'   => 'Deleted successfully',
+            'csrf_hash' => csrf_hash()
+        ]);
     }
 }
