@@ -10,6 +10,7 @@ $routes->get('/', 'Auth::index');
 $routes->get('/login', 'Auth::index');
 $routes->post('/auth', 'Auth::auth');
 $routes->get('/dashboard', 'Dashboard::index');
+$routes->get('/dashboard/stats', 'Dashboard::stats');
 $routes->get('/logout', 'Auth::logout');
 
 // User Acounts routes
@@ -50,14 +51,14 @@ $routes->post('barangay-officials/delete/(:num)', 'BarangayOfficials::delete/$1'
 | HOUSEHOLDS
 |--------------------------------------------------------------------------
 */
-$routes->get('households', 'Households::index');
-$routes->get('households/get/(:num)', 'Households::get/$1');  // ✅ ADDED for edit fetch
-$routes->post('households/save', 'Households::save');
-$routes->get('households/edit/(:num)', 'Households::edit/$1');
-$routes->post('households/update', 'Households::update');
-$routes->post('households/delete/(:num)', 'Households::delete/$1');
-$routes->post('households/fetchRecords', 'Households::fetchRecords');
 
+$routes->get('households',                'Households::index');
+$routes->post('households/fetchRecords',  'Households::fetchRecords');
+$routes->get('households/fetchStats',     'Households::fetchStats');   // <-- NEW
+$routes->post('households/save',          'Households::save');
+$routes->get('households/get/(:num)',     'Households::get/$1');
+$routes->post('households/update',        'Households::update');
+$routes->post('households/delete/(:num)', 'Households::delete/$1');
 /*
 |--------------------------------------------------------------------------
 | BLOTTER
@@ -76,12 +77,13 @@ $routes->post('blotter/fetchRecords', 'Blotter::fetchRecords');
 | CLEARANCES
 |--------------------------------------------------------------------------
 */
-$routes->get('clearances', 'Clearances::index');
-$routes->post('clearances/save', 'Clearances::save');
-$routes->get('clearances/edit/(:num)', 'Clearances::edit/$1');
-$routes->post('clearances/update', 'Clearances::update');
-$routes->post('clearances/delete/(:num)', 'Clearances::delete/$1');
-$routes->post('clearances/fetchRecords', 'Clearances::fetchRecords');
+$routes->get('clearances',                      'Clearances::index');
+$routes->post('clearances/fetchRecords',        'Clearances::fetchRecords');
+$routes->post('clearances/save',                'Clearances::save');
+$routes->get('clearances/edit/(:num)',          'Clearances::edit/$1');
+$routes->post('clearances/update/(:num)',       'Clearances::update/$1');
+$routes->post('clearances/delete/(:num)',       'Clearances::delete/$1');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -114,7 +116,7 @@ $routes->post('indigents/fetchRecords', 'Indigents::fetchRecords');
 |--------------------------------------------------------------------------
 */
 $routes->get('reports', 'Reports::index');
-$routes->get('dashboard/stats', 'Dashboard::stats');
+$routes->get('reports/reportStats', 'Reports::reportStats');
 
 $routes->get('/dashboard', 'Dashboard::index');
 $routes->get('dashboard/stats', 'Dashboard::stats');
@@ -122,3 +124,25 @@ $routes->get('csrf/refresh', 'BaseController::refreshCsrf');
 
 // Logs routes for admin
 $routes->get('/log', 'Logs::log');
+
+// Settings routes
+$routes->get('settings', 'Dashboard::index');
+
+// Blotter fetchRecords route
+$routes->post('blotter/fetchRecords', 'Blotter::fetchRecords');
+
+// Indigents fetchRecords route  
+$routes->post('indigents/fetchRecords', 'Indigents::fetchRecords');
+
+/*
+|--------------------------------------------------------------------------
+| EVENTS
+|--------------------------------------------------------------------------
+*/
+$routes->get('events', 'Events::index');
+$routes->post('events/fetchRecords', 'Events::fetchRecords');
+$routes->post('events/save', 'Events::save');
+$routes->get('events/edit/(:num)', 'Events::edit/$1');
+$routes->post('events/update/(:num)', 'Events::update/$1');
+$routes->post('events/delete/(:num)', 'Events::delete/$1');
+$routes->get('events/upcoming', 'Events::upcoming');

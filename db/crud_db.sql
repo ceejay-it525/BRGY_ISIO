@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 06, 2026 at 08:45 AM
+-- Generation Time: May 07, 2026 at 04:13 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -117,18 +117,52 @@ INSERT INTO `blotter` (`id`, `case_number`, `incident_type`, `incident_date`, `c
 --
 
 CREATE TABLE `clearances` (
-  `id` int(11) NOT NULL,
-  `resident_id` int(11) DEFAULT NULL,
-  `clearance_type` varchar(100) DEFAULT NULL,
-  `purpose` text DEFAULT NULL,
-  `date_issued` date DEFAULT NULL,
-  `valid_until` date DEFAULT NULL,
-  `status` varchar(50) DEFAULT NULL,
+  `clearance_id` int(11) UNSIGNED NOT NULL,
+  `control_number` varchar(50) NOT NULL,
+  `resident_id` int(11) UNSIGNED NOT NULL,
+  `clearance_type_id` int(11) UNSIGNED NOT NULL,
+  `purpose` varchar(255) NOT NULL,
+  `request_date` date NOT NULL,
+  `issued_date` date DEFAULT NULL,
+  `expiry_date` date DEFAULT NULL,
+  `status` enum('Pending','Approved','Released','Rejected','Expired') NOT NULL DEFAULT 'Pending',
+  `fee_amount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `or_number` varchar(50) DEFAULT NULL COMMENT 'Official Receipt Number',
   `remarks` text DEFAULT NULL,
-  `created_at` datetime DEFAULT current_timestamp(),
-  `updated_at` datetime DEFAULT NULL,
-  `deleted_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `processed_by` int(11) UNSIGNED DEFAULT NULL,
+  `signed_by` int(11) UNSIGNED DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `clearance_types`
+--
+
+CREATE TABLE `clearance_types` (
+  `clearance_type_id` int(11) UNSIGNED NOT NULL,
+  `type_name` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `fee_amount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `validity_days` int(11) NOT NULL DEFAULT 365 COMMENT 'How many days the clearance is valid',
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `clearance_types`
+--
+
+INSERT INTO `clearance_types` (`clearance_type_id`, `type_name`, `description`, `fee_amount`, `validity_days`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'Barangay Clearance', 'General barangay clearance for various purposes', 50.00, 365, 1, '2026-05-07 10:13:49', '2026-05-07 10:13:49'),
+(2, 'Certificate of Residency', 'Certifies that the person is a resident of the barangay', 50.00, 365, 1, '2026-05-07 10:13:49', '2026-05-07 10:13:49'),
+(3, 'Good Moral Character', 'Certifies good moral standing of the resident', 50.00, 365, 1, '2026-05-07 10:13:49', '2026-05-07 10:13:49'),
+(4, 'Certificate of Indigency', 'For indigent residents needing financial assistance', 0.00, 365, 1, '2026-05-07 10:13:49', '2026-05-07 10:13:49'),
+(5, 'Business Clearance', 'Clearance for business operations within the barangay', 100.00, 365, 1, '2026-05-07 10:13:49', '2026-05-07 10:13:49'),
+(6, 'Travel Clearance', 'Clearance for travel purposes', 50.00, 180, 1, '2026-05-07 10:13:49', '2026-05-07 10:13:49');
 
 -- --------------------------------------------------------
 
@@ -136,28 +170,33 @@ CREATE TABLE `clearances` (
 -- Table structure for table `households`
 --
 
-CREATE TABLE `households` (
-  `id` int(11) NOT NULL,
-  `head_name` varchar(150) DEFAULT NULL,
-  `address_line1` text DEFAULT NULL,
-  `purok` varchar(150) DEFAULT NULL,
-  `barangay` varchar(100) DEFAULT NULL,
-  `city_municipality` varchar(100) DEFAULT NULL,
-  `province` varchar(100) DEFAULT NULL,
-  `zip_code` varchar(20) DEFAULT NULL,
-  `total_members` int(11) DEFAULT 1,
-  `status` varchar(50) DEFAULT 'Active',
-  `created_at` datetime DEFAULT current_timestamp(),
-  `updated_at` datetime DEFAULT NULL,
-  `deleted_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
+CREATE TABLE IF NOT EXISTS `households` (
+  `id`                int(11)      NOT NULL AUTO_INCREMENT,
+  `head_name`         varchar(150) DEFAULT NULL,
+  `address_line1`     text         DEFAULT NULL,
+  `purok`             varchar(20)  DEFAULT NULL,
+  `barangay`          varchar(100) DEFAULT 'Isio',
+  `city_municipality` varchar(100) DEFAULT 'Cauayan',
+  `province`          varchar(100) DEFAULT 'Negros Occidental',
+  `zip_code`          varchar(20)  DEFAULT '6126',
+  `total_members`     int(11)      DEFAULT 1,
+  `status`            varchar(50)  DEFAULT 'Active',
+  `created_at`        datetime     DEFAULT current_timestamp(),
+  `updated_at`        datetime     DEFAULT NULL ON UPDATE current_timestamp(),
+  `deleted_at`        datetime     DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_status`     (`status`),
+  KEY `idx_purok`      (`purok`),
+  KEY `idx_deleted_at` (`deleted_at`),
+  KEY `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 -- Dumping data for table `households`
 --
 
 INSERT INTO `households` (`id`, `head_name`, `address_line1`, `purok`, `barangay`, `city_municipality`, `province`, `zip_code`, `total_members`, `status`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 'ryan masilac', 'Purok 4', '4', 'ISIO', 'CAUAYAN', 'NEGROS OCCIDENTAL', '6112', 1, 'Active', '2026-05-04 05:04:50', '2026-05-04 05:04:50', NULL);
+(1, 'ryan masilac', 'Purok 4', '4', 'ISIO', 'CAUAYAN', 'NEGROS OCCIDENTAL', '6112', 1, 'Active', '2026-05-04 05:04:50', '2026-05-04 05:04:50', NULL),
+(2, 'JOHN DOE', 'MANTAMILOK', '6', 'ISIO', 'CAUAYAN', 'NEGROS OCCIDENTAL', '6112', 10, 'Active', '2026-05-07 01:52:03', '2026-05-07 01:52:03', NULL);
 
 -- --------------------------------------------------------
 
@@ -182,6 +221,13 @@ CREATE TABLE `indigents` (
   `updated_at` datetime DEFAULT NULL,
   `deleted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `indigents`
+--
+
+INSERT INTO `indigents` (`id`, `resident_id`, `first_name`, `middle_name`, `last_name`, `indigency_category`, `assistance_type`, `assistance_amount`, `date_assessed`, `date_provided`, `status`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, NULL, 'Cymone John', 'belnas', 'Masilac', 'Senior Citizen', 'Medical', 5000.00, '2026-05-06', '2026-05-06', 'Active', '2026-05-06 08:04:30', '2026-05-06 08:04:30', NULL);
 
 -- --------------------------------------------------------
 
@@ -242,6 +288,13 @@ CREATE TABLE `permits` (
   `updated_at` datetime DEFAULT NULL,
   `deleted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `permits`
+--
+
+INSERT INTO `permits` (`id`, `business_name`, `owner_name`, `owner_resident_id`, `business_address`, `business_type`, `permit_type`, `issue_date`, `expiry_date`, `status`, `fees_paid`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 'XIN-PAT', 'LAGULAO', NULL, 'ISIO,CAUAYAN,NEGROS,OCCIDENTAL.', 'SARI SARI STORE', 'New', '2026-05-06', '2027-05-06', 'Active', 50000.00, '2026-05-06 14:15:53', '2026-05-06 14:15:53', NULL);
 
 -- --------------------------------------------------------
 
@@ -352,7 +405,9 @@ INSERT INTO `tbl_logs` (`LOGID`, `USERID`, `ACTION`, `DATELOG`, `TIMELOG`, `user
 (40, '12', 'Login: Cymone', '2026-05-06', '05:44:11', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', 'Cymone', 'LOGIN'),
 (41, '12', 'Login: Cymone', '2026-05-06', '11:12:47', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', 'Cymone', 'LOGIN'),
 (42, '12', 'Logout', '2026-05-06', '14:39:29', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', 'Cymone', 'LOGOUT'),
-(43, '12', 'Login: Cymone', '2026-05-06', '14:39:46', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', 'Cymone', 'LOGIN');
+(43, '12', 'Login: Cymone', '2026-05-06', '14:39:46', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', 'Cymone', 'LOGIN'),
+(44, '12', 'Login: Cymone', '2026-05-06', '21:41:16', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', 'Cymone', 'LOGIN'),
+(45, '12', 'Login: Cymone', '2026-05-07', '09:47:05', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', 'Cymone', 'LOGIN');
 
 -- --------------------------------------------------------
 
@@ -408,8 +463,18 @@ ALTER TABLE `blotter`
 -- Indexes for table `clearances`
 --
 ALTER TABLE `clearances`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `resident_id` (`resident_id`);
+  ADD PRIMARY KEY (`clearance_id`),
+  ADD UNIQUE KEY `uq_control_number` (`control_number`),
+  ADD KEY `idx_resident_id` (`resident_id`),
+  ADD KEY `idx_clearance_type_id` (`clearance_type_id`),
+  ADD KEY `idx_status` (`status`);
+
+--
+-- Indexes for table `clearance_types`
+--
+ALTER TABLE `clearance_types`
+  ADD PRIMARY KEY (`clearance_type_id`),
+  ADD UNIQUE KEY `uq_type_name` (`type_name`);
 
 --
 -- Indexes for table `households`
@@ -489,19 +554,25 @@ ALTER TABLE `blotter`
 -- AUTO_INCREMENT for table `clearances`
 --
 ALTER TABLE `clearances`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `clearance_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `clearance_types`
+--
+ALTER TABLE `clearance_types`
+  MODIFY `clearance_type_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `households`
 --
 ALTER TABLE `households`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `indigents`
 --
 ALTER TABLE `indigents`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `login_attempts`
@@ -519,7 +590,7 @@ ALTER TABLE `migrations`
 -- AUTO_INCREMENT for table `permits`
 --
 ALTER TABLE `permits`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `residents`
@@ -531,23 +602,13 @@ ALTER TABLE `residents`
 -- AUTO_INCREMENT for table `tbl_logs`
 --
 ALTER TABLE `tbl_logs`
-  MODIFY `LOGID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
+  MODIFY `LOGID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
-
---
--- Constraints for dumped tables
---
-
---
--- Constraints for table `clearances`
---
-ALTER TABLE `clearances`
-  ADD CONSTRAINT `clearances_ibfk_1` FOREIGN KEY (`resident_id`) REFERENCES `residents` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

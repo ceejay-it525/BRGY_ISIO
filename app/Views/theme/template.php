@@ -91,86 +91,41 @@
 <script src="<?= base_url('assets/adminlte/plugins/datatables-buttons/js/buttons.colVis.min.js') ?>"></script>
 <script src="<?= base_url('assets/adminlte/plugins/toastr/toastr.min.js') ?>"></script>
 <script src="<?= base_url('assets/adminlte/plugins/sweetalert2/sweetalert2.min.js') ?>"></script>
+
+<!-- Global App JavaScript -->
+<script src="<?= base_url('js/app.js') ?>"></script>
+
+<!-- Theme Toggle Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    
+    if (!themeToggle || !themeIcon) return;
+
+    // Apply saved theme on load
+    let savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        themeIcon.classList.replace('fa-sun', 'fa-moon');
+    }
+
+    // Toggle theme on click
+    themeToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        document.body.classList.toggle('dark-mode');
+        
+        if (document.body.classList.contains('dark-mode')) {
+            themeIcon.classList.replace('fa-sun', 'fa-moon');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            themeIcon.classList.replace('fa-moon', 'fa-sun');
+            localStorage.setItem('theme', 'light');
+        }
+    });
+});
+</script>
+
 <?= $this->renderSection('scripts') ?>
 </body>
 </html>
-<script>
-const themeToggle = document.getElementById('themeToggle');
-const navbar = document.getElementById('mainNavbar');
-const sidebar = document.getElementById('mainSidebar');
-const brandLink = document.getElementById('brandLink');
-
-// Apply saved theme on load
-let savedTheme = localStorage.getItem('adminlteTheme');
-if(savedTheme === 'dark'){
-    document.body.classList.add('dark-mode');
-
-    // Navbar
-    navbar.classList.remove('navbar-warning');
-    navbar.classList.add('navbar-dark','bg-dark');
-
-    // Sidebar
-    sidebar.classList.remove('sidebar-light');
-    sidebar.classList.add('sidebar-dark-primary');
-
-    // Brand link
-    brandLink.classList.remove('bg-warning');
-    brandLink.classList.add('bg-dark');
-
-    themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
-} else {
-    // Light mode
-    navbar.classList.add('navbar-warning');
-
-    sidebar.classList.remove('sidebar-dark-primary');
-    sidebar.classList.add('sidebar-light');
-
-    brandLink.classList.remove('bg-dark');
-    brandLink.classList.add('bg-warning');
-
-    themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
-}
-
-// Toggle theme
-themeToggle.addEventListener('click', function(e){
-    e.preventDefault();
-
-    if(document.body.classList.contains('dark-mode')){
-        // Switch to light
-        document.body.classList.remove('dark-mode');
-
-        // Navbar
-        navbar.classList.remove('navbar-dark','bg-dark');
-        navbar.classList.add('navbar-warning');
-
-        // Sidebar
-        sidebar.classList.remove('sidebar-dark-primary');
-        sidebar.classList.add('sidebar-light');
-
-        // Brand link
-        brandLink.classList.remove('bg-dark');
-        brandLink.classList.add('bg-warning');
-
-        themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
-        localStorage.setItem('adminlteTheme','light');
-    } else {
-        // Switch to dark
-        document.body.classList.add('dark-mode');
-
-        // Navbar
-        navbar.classList.remove('navbar-warning');
-        navbar.classList.add('navbar-dark','bg-dark');
-
-        // Sidebar
-        sidebar.classList.remove('sidebar-light');
-        sidebar.classList.add('sidebar-dark-primary');
-
-        // Brand link
-        brandLink.classList.remove('bg-warning');
-        brandLink.classList.add('bg-dark');
-
-        themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
-        localStorage.setItem('adminlteTheme','dark');
-    }
-});
-</script>

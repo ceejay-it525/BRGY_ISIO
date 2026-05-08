@@ -1,4 +1,4 @@
-<?php
+<?php 
 
 namespace App\Controllers;
 
@@ -41,13 +41,13 @@ class Reports extends Controller
             "SELECT status, COUNT(*) as total FROM blotter GROUP BY status"
         )->getResultArray();
 
-        // Clearances issued per month (last 6 months)
+        // Clearances issued per month (last 6 months) — fixed: issued_date
         $data['clearances_monthly'] = $db->query(
-            "SELECT DATE_FORMAT(date_issued, '%b %Y') AS month_label, COUNT(*) as total
+            "SELECT DATE_FORMAT(issued_date, '%b %Y') AS month_label, COUNT(*) as total
              FROM clearances
-             WHERE date_issued >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-             GROUP BY DATE_FORMAT(date_issued, '%Y-%m')
-             ORDER BY MIN(date_issued)"
+             WHERE issued_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+             GROUP BY DATE_FORMAT(issued_date, '%Y-%m')
+             ORDER BY MIN(issued_date)"
         )->getResultArray();
 
         // Business permits by status
@@ -68,5 +68,20 @@ class Reports extends Controller
             ->getResultArray();
 
         return view('reports/index', $data);
+    }
+
+    public function reportStats()
+    {
+        $db = \Config\Database::connect();
+
+        return $this->response->setJSON([
+            'total_residents'   => $db->table('residents')->countAllResults(),
+            'total_households'  => $db->table('households')->countAllResults(),
+            'total_blotter'     => $db->table('blotter')->countAllResults(),
+            'total_clearances'  => $db->table('clearances')->countAllResults(),
+            'total_officials'   => $db->table('barangay_officials')->where('status', 'Active')->countAllResults(),
+            'total_permits'     => $db->table('permits')->countAllResults(),
+            'total_indigents'   => $db->table('indigents')->countAllResults(),
+        ]);
     }
 }

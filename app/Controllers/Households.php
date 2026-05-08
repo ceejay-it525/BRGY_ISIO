@@ -8,11 +8,20 @@ class Households extends BaseController
 {
     protected $householdsModel;
 
+    // ── Barangay Defaults ─────────────────────────────────────
+    private const BARANGAY          = 'Isio';
+    private const CITY_MUNICIPALITY = 'Cauayan';
+    private const PROVINCE          = 'Negros Occidental';
+    private const ZIP_CODE          = '6126';
+
     public function __construct()
     {
         $this->householdsModel = new HouseholdsModel();
     }
 
+    // ==============================
+    // INDEX VIEW
+    // ==============================
     public function index()
     {
         return view('households/index');
@@ -25,23 +34,26 @@ class Households extends BaseController
     {
         $request = service('request');
 
-        $draw   = (int) $request->getPost('draw');
-        $start  = (int) $request->getPost('start');
-        $length = (int) $request->getPost('length');
-
+        $draw        = (int) $request->getPost('draw');
+        $start       = (int) $request->getPost('start');
+        $length      = (int) $request->getPost('length');
         $search      = $request->getPost('search');
         $searchValue = $search['value'] ?? '';
 
-        $result = $this->householdsModel->getRecords($start, $length, $searchValue);
-
+        $result  = $this->householdsModel->getRecords($start, $length, $searchValue);
         $counter = $start + 1;
+
         foreach ($result['data'] as &$row) {
             $row['row_number'] = $counter++;
         }
 
+        $totalAll = $this->householdsModel
+            ->where('deleted_at IS NULL')
+            ->countAllResults(false);
+
         return $this->response->setJSON([
             'draw'            => $draw,
-            'recordsTotal'    => $this->householdsModel->where('deleted_at IS NULL')->countAllResults(false),
+            'recordsTotal'    => $totalAll,
             'recordsFiltered' => $result['filtered'],
             'data'            => $result['data'],
             'csrf_hash'       => csrf_hash()
@@ -49,50 +61,127 @@ class Households extends BaseController
     }
 
     // ==============================
+    // DASHBOARD STATS (AJAX)
+    // ==============================
+    public function fetchStats()
+    {
+        $this->response->setContentType('application/json');
+
+        try {
+            $stats = $this->householdsModel->getDashboardStats();
+
+            return $this->response->setJSON([
+                'status'    => 'success',
+                'data'      => $stats,
+                'csrf_hash' => csrf_hash()
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+                'data'    => [
+                    'total_households'    => 0,
+                    'active_households'   => 0,
+                    'new_households'      => 0,
+                    'assistance_priority' => 0
+                ]
+            ]);
+        }
+    }
+
+    // ==============================
+    // FETCH ASSISTANCE PRIORITY LIST
+    // Active households with 5+ members
+    // ==============================
+    public function fetchAssistancePriority()
+    {
+        $this->response->setContentType('application/json');
+
+        try {
+            $list = $this->householdsModel->getAssistancePriorityList();
+
+            return $this->response->setJSON([
+                'status'    => 'success',
+                'data'      => $list,
+                'count'     => count($list),
+                'csrf_hash' => csrf_hash()
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+                'data'    => []
+            ]);
+        }
+    }
+
+    // ==============================
     // SAVE HOUSEHOLD
     // ==============================
     public function save()
     {
+        $headName    = trim($this->request->getPost('head_name') ?? '');
+        $addressLine = trim($this->request->getPost('address_line1') ?? '');
+        $purok       = trim($this->request->getPost('purok') ?? '');
+        $members     = (int) ($this->request->getPost('total_members') ?: 1);
+        $status      = $this->request->getPost('status') ?: 'Active';
+
+        if (empty($headName) || empty($addressLine) || empty($purok)) {
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'Head of Household, Address, and Purok are required.',
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
+
+        $validPuroks = ['1', '2', '3', '4', '5', '6', '7A', '7B'];
+        if (!in_array($purok, $validPuroks)) {
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'Invalid Purok selection.',
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
+
+        if ($members < 1 || $members > 99) {
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'Total members must be between 1 and 99.',
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
+
+        if ($this->householdsModel->isDuplicateHead($headName)) {
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'A household with this head name already exists.',
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
+
         $data = [
-            'head_name'         => $this->request->getPost('head_name'),
-            'address_line1'     => $this->request->getPost('address_line1'),
-            'purok'      => $this->request->getPost('purok'),
-            'barangay'          => $this->request->getPost('barangay'),
-            'city_municipality' => $this->request->getPost('city_municipality'),
-            'province'          => $this->request->getPost('province'),
-            'zip_code'          => $this->request->getPost('zip_code'),
-            'total_members'     => $this->request->getPost('total_members') ?: 1,
-            'status'            => $this->request->getPost('status'),
+            'head_name'         => $headName,
+            'address_line1'     => $addressLine,
+            'purok'             => $purok,
+            'barangay'          => self::BARANGAY,
+            'city_municipality' => self::CITY_MUNICIPALITY,
+            'province'          => self::PROVINCE,
+            'zip_code'          => self::ZIP_CODE,
+            'total_members'     => $members,
+            'status'            => $status,
         ];
-
-        // Validation - Purok/ is now required
-        if (empty($data['head_name']) || empty($data['address_line1']) || empty($data['purok'])) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'Head of Household, Address, and Purok/ are required'
-            ]);
-        }
-
-        // Validate purok value
-        $validPuroks = ['1', '2', '3', '4', '5', '6', '7', 'A', '7B'];
-        if (!in_array($data['purok'], $validPuroks)) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'Invalid Purok/ selection'
-            ]);
-        }
 
         if ($this->householdsModel->insert($data)) {
             return $this->response->setJSON([
                 'status'    => 'success',
-                'message'   => 'Household saved successfully',
+                'message'   => 'Household added successfully.',
                 'csrf_hash' => csrf_hash()
             ]);
         }
 
         return $this->response->setJSON([
             'status'    => 'error',
-            'message'   => 'Failed to save household',
+            'message'   => 'Failed to save household. Please try again.',
             'csrf_hash' => csrf_hash()
         ]);
     }
@@ -114,7 +203,7 @@ class Households extends BaseController
 
         return $this->response->setJSON([
             'status'    => 'error',
-            'message'   => 'Household not found',
+            'message'   => 'Household not found.',
             'csrf_hash' => csrf_hash()
         ]);
     }
@@ -124,55 +213,77 @@ class Households extends BaseController
     // ==============================
     public function update()
     {
-        $id = $this->request->getPost('id');
+        $id          = (int) ($this->request->getPost('id') ?: 0);
+        $headName    = trim($this->request->getPost('head_name') ?? '');
+        $addressLine = trim($this->request->getPost('address_line1') ?? '');
+        $purok       = trim($this->request->getPost('purok') ?? '');
+        $members     = (int) ($this->request->getPost('total_members') ?: 1);
+        $status      = $this->request->getPost('status') ?: 'Active';
 
         if (empty($id)) {
             return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'Invalid household ID'
+                'status'    => 'error',
+                'message'   => 'Invalid household ID.',
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
+
+        if (empty($headName) || empty($addressLine) || empty($purok)) {
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'Head of Household, Address, and Purok are required.',
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
+
+        $validPuroks = ['1', '2', '3', '4', '5', '6', '7A', '7B'];
+        if (!in_array($purok, $validPuroks)) {
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'Invalid Purok selection.',
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
+
+        if ($members < 1 || $members > 99) {
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'Total members must be between 1 and 99.',
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
+
+        if ($this->householdsModel->isDuplicateHead($headName, $id)) {
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'A household with this head name already exists.',
+                'csrf_hash' => csrf_hash()
             ]);
         }
 
         $data = [
-            'head_name'         => $this->request->getPost('head_name'),
-            'address_line1'     => $this->request->getPost('address_line1'),
-            'purok'      => $this->request->getPost('purok'),
-            'barangay'          => $this->request->getPost('barangay'),
-            'city_municipality' => $this->request->getPost('city_municipality'),
-            'province'          => $this->request->getPost('province'),
-            'zip_code'          => $this->request->getPost('zip_code'),
-            'total_members'     => $this->request->getPost('total_members') ?: 1,
-            'status'            => $this->request->getPost('status'),
+            'head_name'         => $headName,
+            'address_line1'     => $addressLine,
+            'purok'             => $purok,
+            'barangay'          => self::BARANGAY,
+            'city_municipality' => self::CITY_MUNICIPALITY,
+            'province'          => self::PROVINCE,
+            'zip_code'          => self::ZIP_CODE,
+            'total_members'     => $members,
+            'status'            => $status,
         ];
-
-        // Validation - Purok/ is now required
-        if (empty($data['head_name']) || empty($data['address_line1']) || empty($data['purok'])) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'Head of Household, Address, and Purok/ are required'
-            ]);
-        }
-
-        // Validate purok value
-        $validPuroks = ['1', '2', '3', '4', '5', '6', '7A', '7B'];
-        if (!in_array($data['purok'], $validPuroks)) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'Invalid Purok/ selection'
-            ]);
-        }
 
         if ($this->householdsModel->update($id, $data)) {
             return $this->response->setJSON([
                 'status'    => 'success',
-                'message'   => 'Household updated successfully',
+                'message'   => 'Household updated successfully.',
                 'csrf_hash' => csrf_hash()
             ]);
         }
 
         return $this->response->setJSON([
             'status'    => 'error',
-            'message'   => 'Failed to update household',
+            'message'   => 'Failed to update household. Please try again.',
             'csrf_hash' => csrf_hash()
         ]);
     }
@@ -182,17 +293,27 @@ class Households extends BaseController
     // ==============================
     public function delete($id)
     {
+        $id = (int) $id;
+
+        if (empty($id)) {
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'Invalid household ID.',
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
+
         if ($this->householdsModel->delete($id)) {
             return $this->response->setJSON([
                 'status'    => 'success',
-                'message'   => 'Household deleted successfully',
+                'message'   => 'Household deleted successfully.',
                 'csrf_hash' => csrf_hash()
             ]);
         }
 
         return $this->response->setJSON([
             'status'    => 'error',
-            'message'   => 'Failed to delete household',
+            'message'   => 'Failed to delete household.',
             'csrf_hash' => csrf_hash()
         ]);
     }

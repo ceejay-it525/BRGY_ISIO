@@ -1,6 +1,6 @@
 // =============================================
 //  Indigents Module — indigents.js
-//  Updated for direct name entry (no resident search)
+//  Full CRUD with improved UI and functionality
 // =============================================
 
 function updateCsrf(response) {
@@ -11,7 +11,7 @@ function updateCsrf(response) {
 
 function showToast(type, message) {
     if (typeof toastr === 'undefined') { 
-        const alertDiv = $(`<div class="alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show" role="alert">${message}<button type="button" class="close" data-dismiss="alert">&times;</button></div>`);
+        const alertDiv = $(`<div class="alert alert-${type === 'success' ? 'success' : (type === 'warning' ? 'warning' : 'danger')} alert-dismissible fade show" role="alert">${message}<button type="button" class="close" data-dismiss="alert">&times;</button></div>`);
         $('.content-header').prepend(alertDiv);
         setTimeout(() => alertDiv.fadeOut(), 5000);
         return; 
@@ -33,7 +33,13 @@ function statusBadge(s) {
         'Completed': 'info',
         'Inactive': 'secondary'
     };
-    return `<span class="badge badge-${badges[s] || 'secondary'}">${s || '—'}</span>`;
+    const icons = {
+        'Active': 'fa-check-circle',
+        'Pending': 'fa-clock',
+        'Completed': 'fa-check-double',
+        'Inactive': 'fa-times-circle'
+    };
+    return `<span class="badge badge-${badges[s] || 'secondary'}"><i class="fas ${icons[s] || ''} mr-1"></i>${s || '—'}</span>`;
 }
 
 function categoryBadge(c) {
@@ -59,10 +65,18 @@ function pesoFormat(v) {
     return '₱' + parseFloat(v).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function formatDate(dateStr) {
+    if (!dateStr || dateStr === '0000-00-00') return '—';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
 // =============================================
 //  On DOM Ready
 // =============================================
 let indigentsTable;
+let pendingDeleteId = null;
+
 $(document).ready(function () {
 
     // =============================================
@@ -77,7 +91,7 @@ $(document).ready(function () {
         serverSide: true,
         responsive: true,
         pageLength: 25,
-        order: [[2, 'asc']],
+        order: [[1, 'desc']],
         ajax: {
             url: baseUrl + 'indigents/fetchRecords',
             type: 'POST',
@@ -92,11 +106,32 @@ $(document).ready(function () {
         columns: [
             { data: 'row_number', width: '5%' },
             { data: 'id', visible: false },
-            { data: 'resident_name' },
+            { 
+                data: 'resident_name',
+                render: function(data) {
+                    return `<strong>${data || '—'}</strong>`;
+                }
+            },
             { data: 'indigency_category', render: v => categoryBadge(v) },
-            { data: 'assistance_type' },
+            { 
+                data: 'assistance_type',
+                render: function(data) {
+                    return data ? `<span class="text-muted"><i class="fas fa-hand-holding mr-1"></i>${data}</span>` : '—';
+                }
+            },
             { data: 'assistance_amount', render: v => pesoFormat(v) },
-            { data: 'date_provided' },
+            { 
+                data: 'date_assessed',
+                render: function(data) {
+                    return data ? formatDate(data) : '<span class="text-muted">—</span>';
+                }
+            },
+            { 
+                data: 'date_provided',
+                render: function(data) {
+                    return data ? formatDate(data) : '<span class="text-muted">—</span>';
+                }
+            },
             { data: 'status', render: v => statusBadge(v), width: '10%' },
             {
                 data: null,
@@ -105,19 +140,31 @@ $(document).ready(function () {
                 orderable: false,
                 render: row => `
                     <div class="btn-group btn-group-sm" role="group">
-                        <button class="btn btn-warning edit-btn" data-id="${row.id}" title="Edit">
+                        <button class="btn btn-warning edit-btn" data-id="${row.id}" title="Edit" data-toggle="tooltip">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-danger deleteBtn" data-id="${row.id}" title="Delete">
+                        <button class="btn btn-danger deleteBtn" data-id="${row.id}" title="Delete" data-toggle="tooltip">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>`
             }
         ],
         language: {
-            processing: '<i class="fas fa-spinner fa-spin"></i> Loading...'
-        }
+            processing: '<i class="fas fa-spinner fa-spin"></i> Loading...',
+            emptyTable: 'No indigent records found.',
+            zeroRecords: 'No matching records found'
+        },
+        dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+             "<'row'<'col-sm-12'tr>>" +
+             "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
     });
+
+    // Initialize tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+
+    // Set default dates
+    const today = new Date().toISOString().split('T')[0];
+    $('#addDateAssessed').val(today);
 
     // =============================================
     // ADD RECORD FORM
@@ -194,17 +241,17 @@ $(document).ready(function () {
                 // Clear form
                 $('#editIndigentForm')[0].reset();
                 
-                // Populate fields
+                // Populate fields using specific IDs
                 $('#editIndigentId').val(d.id);
-                $('input[name="first_name"]').val(d.first_name || '').prop('readonly', false);
-                $('input[name="middle_name"]').val(d.middle_name || '');
-                $('input[name="last_name"]').val(d.last_name || '');
-                $('#editIndigencyCategory').val(d.indigency_category);
-                $('#editAssistanceType').val(d.assistance_type);
-                $('#editAssistanceAmount').val(d.assistance_amount);
-                $('#editIndigentStatus').val(d.status);
-                $('#editDateAssessed').val(d.date_assessed);
-                $('#editDateProvided').val(d.date_provided);
+                $('#editFirstName').val(d.first_name || '');
+                $('#editMiddleName').val(d.middle_name || '');
+                $('#editLastName').val(d.last_name || '');
+                $('#editIndigencyCategory').val(d.indigency_category || '');
+                $('#editAssistanceType').val(d.assistance_type || '');
+                $('#editAssistanceAmount').val(d.assistance_amount || '0');
+                $('#editIndigentStatus').val(d.status || 'Active');
+                $('#editDateAssessed').val(d.date_assessed || '');
+                $('#editDateProvided').val(d.date_provided || '');
 
                 $('#editIndigentModal').modal('show');
             } else {
@@ -222,8 +269,8 @@ $(document).ready(function () {
     $('#editIndigentForm').on('submit', function (e) {
         e.preventDefault();
 
-        const firstName = $('input[name="first_name"]').val().trim();
-        const lastName = $('input[name="last_name"]').val().trim();
+        const firstName = $('#editFirstName').val().trim();
+        const lastName = $('#editLastName').val().trim();
         
         if (!firstName || !lastName) {
             showToast('warning', 'First Name and Last Name are required.');
@@ -266,13 +313,18 @@ $(document).ready(function () {
     // DELETE CONFIRM
     // =============================================
     $(document).on('click', '.deleteBtn', function () {
-        const id = $(this).data('id');
-        pendingDeleteId = id;
+        pendingDeleteId = $(this).data('id');
         $('#deleteConfirmModal').modal('show');
     });
 
     $('#confirmDeleteBtn').on('click', function() {
-        if (!pendingDeleteId) return;
+        if (!pendingDeleteId) {
+            showToast('error', 'No record selected for deletion.');
+            return;
+        }
+
+        const $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Deleting...');
 
         $.post(baseUrl + 'indigents/delete/' + pendingDeleteId, {
             csrf_test_name: $('input[name=csrf_test_name]').val()
@@ -288,16 +340,42 @@ $(document).ready(function () {
             updateCsrf(res);
         }, 'json').fail(function() {
             showToast('error', 'Failed to delete record');
+        }).always(function() {
+            $btn.prop('disabled', false).html('<i class="fas fa-trash mr-1"></i> Delete');
         });
     });
 
     // Reset forms when modals close
     $('#AddNewModal').on('hidden.bs.modal', function () {
         $('#addIndigentForm')[0].reset();
+        // Reset default date
+        const today = new Date().toISOString().split('T')[0];
+        $('#addDateAssessed').val(today);
     });
 
     $('#editIndigentModal').on('hidden.bs.modal', function () {
         $('#editIndigentForm')[0].reset();
         $('#editIndigentId').val('');
     });
+
+    // =============================================
+    // FETCH STATS
+    // =============================================
+    function fetchStats() {
+        $.get(baseUrl + 'indigents/stats')
+            .done(function (res) {
+                if (res.status === 'success') {
+                    $('#totalIndigents').text(res.data.total || 0);
+                    $('#activeIndigents').text(res.data.active || 0);
+                    $('#pendingIndigents').text(res.data.pending || 0);
+                    $('#totalAssistance').text('₱' + (res.data.total_assistance || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                }
+            })
+            .fail(function () {
+                // Stats endpoint not available, that's okay
+            });
+    }
+
+    // Initialize stats
+    fetchStats();
 });

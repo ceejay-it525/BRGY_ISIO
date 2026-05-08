@@ -328,6 +328,17 @@ body.dark-mode .nav-treeview .nav-link.active {
                 <!-- UTILITIES -->
                 <li class="nav-header text-secondary">📊 UTILITIES</li>
 
+                <!-- Events -->
+                <li class="nav-item">
+                    <a href="<?= base_url('events') ?>" class="nav-link <?= (uri_string() == 'events') ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-calendar-alt text-warning"></i>
+                        <p>
+                            <span>Events</span>
+                            <small class="d-block text-muted">Barangay events</small>
+                        </p>
+                    </a>
+                </li>
+
                 <!-- Reports -->
                 <li class="nav-item">
                     <a href="<?= base_url('reports') ?>" class="nav-link <?= (uri_string() == 'reports') ? 'active' : '' ?>">

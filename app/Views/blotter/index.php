@@ -53,7 +53,7 @@
                       <option value="case_number">Brgy. Case #</option>
                       <option value="incident_type">Accusation</option>
                       <option value="complainant_name">Complainant</option>
-                      <option value="respondent_name">Suspect</option>
+                      <option value="respondent_name">Respondent</option>
                       <option value="incident_location">Location</option>
                       <option value="status">Status</option>
                     </select>
@@ -80,7 +80,7 @@
                       <th style="display:none;">ID</th>
                       <th>Case No.</th>
                       <th>Complainant</th>
-                      <th>Suspect</th>
+                      <th>Respondent</th>
                       <th>Accusation</th>
                       <th>Date</th>
                       <th>Location</th>
@@ -112,7 +112,7 @@
                   <tr><th>Case #</th><td id="detailCaseNumber">—</td></tr>
                   <tr><th>Accusation</th><td id="detailIncidentType">—</td></tr>
                   <tr><th>Complainant</th><td id="detailComplainantName">—</td></tr>
-                  <tr><th>Suspect</th><td id="detailRespondentName">—</td></tr>
+                  <tr><th>Respondent</th><td id="detailRespondentName">—</td></tr>
                   <tr><th>Location</th><td id="detailLocation">—</td></tr>
                   <tr><th>Case Date</th><td id="detailIncidentDate">—</td></tr>
                   <tr><th>Status</th><td id="detailStatus"><span class="badge badge-secondary">—</span></td></tr>
@@ -201,7 +201,7 @@
                 </div>
                 <div class="col-sm-6">
                   <div class="form-group">
-                    <label>Suspect  Name <span class="text-danger">*</span></label>
+                    <label>Respondent  Name <span class="text-danger">*</span></label>
                     <input type="text" name="respondent_name" class="form-control" placeholder="Full name of respondent" required>
                     <div class="invalid-feedback">This field is required.</div>
                   </div>
@@ -320,7 +320,7 @@
                 </div>
                 <div class="col-sm-6">
                   <div class="form-group">
-                    <label>Suspect  Name <span class="text-danger">*</span></label>
+                    <label>Respondent  Name <span class="text-danger">*</span></label>
                     <input type="text" id="editRespondentName" name="respondent_name" class="form-control" required>
                     <div class="invalid-feedback">This field is required.</div>
                   </div>

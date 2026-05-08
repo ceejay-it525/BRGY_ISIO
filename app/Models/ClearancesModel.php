@@ -6,77 +6,108 @@ use CodeIgniter\Model;
 
 class ClearancesModel extends Model
 {
-    protected $table = 'clearances';
+    protected $table      = 'clearances';
     protected $primaryKey = 'clearance_id';
-    
+
     protected $useTimestamps = true;
-    protected $dateFormat = 'datetime';
-    protected $createdField = 'created_at';
-    protected $updatedField = 'updated_at';
-    
+    protected $dateFormat    = 'datetime';
+    protected $createdField  = 'created_at';
+    protected $updatedField  = 'updated_at';
+
     protected $allowedFields = [
-        'control_number', 'resident_id', 'clearance_type_id', 'purpose', 
-        'request_date', 'issued_date', 'expiry_date', 'status', 
-        'fee_amount', 'or_number', 'remarks', 'processed_by', 'signed_by'
+        'control_number',
+        'resident_id',
+        'clearance_type_id',
+        'purpose',
+        'request_date',
+        'issued_date',
+        'expiry_date',
+        'status',
+        'fee_amount',
+        'or_number',
+        'remarks',
+        'processed_by',
+        'signed_by',
     ];
 
-    protected $validationRules = [
-        'control_number' => 'required|is_unique[clearances.control_number]',
-        'resident_id' => 'required|integer',
-        'clearance_type_id' => 'required|integer',
-        'purpose' => 'required|max_length[255]',
-        'request_date' => 'required|valid_date',
-        'status' => 'required|in_list[Pending,Approved,Released,Rejected,Expired]',
-        'fee_amount' => 'required|numeric|greater_than_equal_to[0]'
-    ];
+    // ─── DataTables server-side ───────────────────────────────────────────────
 
-    public function getRecords($start = 0, $length = 10, $search = '')
+    public function getRecords(int $start = 0, int $length = 10, string $search = ''): array
     {
-        $builder = $this->db->table($this->table . ' c');
+        $builder = $this->db->table("{$this->table} c");
+
         $builder->select("
-            c.*, 
-            CONCAT(resident.first_name, ' ', COALESCE(resident.middle_name, ''), ' ', resident.last_name) as resident_name,
+            c.clearance_id,
+            c.control_number,
+            c.resident_id,
+            c.clearance_type_id,
+            c.purpose,
+            c.status,
+            c.fee_amount,
+            c.or_number,
+            c.remarks,
+            c.request_date,
+            c.issued_date,
+            c.expiry_date,
+            TRIM(CONCAT(
+                r.first_name, ' ',
+                COALESCE(NULLIF(r.middle_name,''), ''),
+                ' ', r.last_name
+            )) AS resident_name,
             ct.type_name,
-            DATE_FORMAT(c.request_date, '%M %d, %Y') as formatted_request_date,
-            DATE_FORMAT(c.issued_date, '%M %d, %Y') as formatted_issued_date
+            DATE_FORMAT(c.request_date, '%M %d, %Y') AS formatted_request_date,
+            DATE_FORMAT(c.issued_date,  '%M %d, %Y') AS formatted_issued_date,
+            DATE_FORMAT(c.expiry_date,  '%M %d, %Y') AS formatted_expiry_date
         ");
-        $builder->join('residents resident', 'c.resident_id = resident.resident_id', 'left');
+
+        $builder->join('residents r',        'c.resident_id = r.id',                       'left');
         $builder->join('clearance_types ct', 'c.clearance_type_id = ct.clearance_type_id', 'left');
-        
-        if (!empty($search)) {
-            $builder->groupStart();
-            $builder->like('c.control_number', $search);
-            $builder->orLike('c.purpose', $search);
-            $builder->orLike('c.status', $search);
-            $builder->orLike('resident.first_name', $search);
-            $builder->orLike('resident.last_name', $search);
-            $builder->groupEnd();
-        }
+
+        $this->applySearch($builder, $search);
 
         $builder->orderBy('c.created_at', 'DESC');
         $builder->limit($length, $start);
 
-        return $builder->get()->getResultArray();
+        $rows = $builder->get()->getResultArray();
+
+        // Inject 1-based row numbers relative to current page offset
+        $counter = $start + 1;
+        foreach ($rows as &$row) {
+            $row['row_number'] = $counter++;
+        }
+        unset($row);
+
+        return ['data' => $rows];
     }
 
-    public function countFiltered($search = '')
+    // ─── Count helpers ────────────────────────────────────────────────────────
+
+    public function countFiltered(string $search = ''): int
     {
-        $builder = $this->db->table($this->table . ' c');
-        $builder->select('COUNT(*) as total');
-        $builder->join('residents resident', 'c.resident_id = resident.resident_id', 'left');
-        
-        if (!empty($search)) {
-            $builder->groupStart();
-            $builder->like('c.control_number', $search);
-            $builder->orLike('c.purpose', $search);
-            $builder->orLike('c.status', $search);
-            $builder->orLike('resident.first_name', $search);
-            $builder->orLike('resident.last_name', $search);
-            $builder->groupEnd();
+        $builder = $this->db->table("{$this->table} c");
+        $builder->join('residents r',        'c.resident_id = r.id',                       'left');
+        $builder->join('clearance_types ct', 'c.clearance_type_id = ct.clearance_type_id', 'left');
+
+        $this->applySearch($builder, $search);
+
+        return (int) $builder->countAllResults();
+    }
+
+    // ─── Shared search filter ─────────────────────────────────────────────────
+
+    private function applySearch($builder, string $search): void
+    {
+        if ($search === '') {
+            return;
         }
 
-        $result = $builder->get()->getRowArray();
-        return $result['total'] ?? 0;
+        $builder->groupStart();
+            $builder->like('c.control_number', $search);
+            $builder->orLike('c.purpose',      $search);
+            $builder->orLike('c.status',       $search);
+            $builder->orLike('r.first_name',   $search);
+            $builder->orLike('r.last_name',    $search);
+            $builder->orLike('ct.type_name',   $search);
+        $builder->groupEnd();
     }
 }
-

@@ -26,60 +26,118 @@ class HouseholdsModel extends Model
     protected $updatedField  = 'updated_at';
     protected $deletedField  = 'deleted_at';
 
-    public function getRecords($start, $length, $searchValue = '')
+    // ==============================
+    // SERVER-SIDE DATATABLE RECORDS
+    // ==============================
+    public function getRecords(int $start, int $length, string $searchValue = ''): array
     {
-        // -------------------------
-        // BASE BUILDER (DATA QUERY)
-        // -------------------------
-        $builder = $this->db->table($this->table);
+        $db = $this->db;
 
-        $builder->select('*');
+        $builder = $db->table($this->table);
+        $builder->select('id, head_name, address_line1, purok, barangay, city_municipality, total_members, status, created_at');
         $builder->where('deleted_at IS NULL');
 
-        if (!empty($searchValue)) {
+        if ($searchValue !== '') {
             $builder->groupStart()
                 ->like('head_name', $searchValue)
                 ->orLike('address_line1', $searchValue)
                 ->orLike('purok', $searchValue)
                 ->orLike('barangay', $searchValue)
                 ->orLike('city_municipality', $searchValue)
-                ->orLike('province', $searchValue)
-                ->orLike('zip_code', $searchValue)
                 ->orLike('status', $searchValue)
                 ->groupEnd();
         }
 
-        // -------------------------
-        // CLONE FOR COUNT (SAFE WAY)
-        // -------------------------
-        $countBuilder = $this->db->table($this->table);
-        $countBuilder->select('id');
+        // Count filtered
+        $countBuilder = $db->table($this->table);
         $countBuilder->where('deleted_at IS NULL');
-
-        if (!empty($searchValue)) {
+        if ($searchValue !== '') {
             $countBuilder->groupStart()
                 ->like('head_name', $searchValue)
                 ->orLike('address_line1', $searchValue)
                 ->orLike('purok', $searchValue)
                 ->orLike('barangay', $searchValue)
                 ->orLike('city_municipality', $searchValue)
-                ->orLike('province', $searchValue)
-                ->orLike('zip_code', $searchValue)
                 ->orLike('status', $searchValue)
                 ->groupEnd();
         }
+        $filteredCount = $countBuilder->countAllResults();
 
-        $filteredRecords = $countBuilder->countAllResults();
-
-        // -------------------------
-        // PAGINATION
-        // -------------------------
+        $builder->orderBy('created_at', 'DESC');
         $builder->limit($length, $start);
         $data = $builder->get()->getResultArray();
 
         return [
             'data'     => $data,
-            'filtered' => $filteredRecords
+            'filtered' => $filteredCount
         ];
+    }
+
+    // ==============================
+    // DASHBOARD STATISTICS
+    // ==============================
+    public function getDashboardStats(): array
+    {
+        $db    = $this->db;
+        $table = $this->table;
+
+        $total = (int) $db->query(
+            "SELECT COUNT(*) AS cnt FROM `{$table}` WHERE deleted_at IS NULL"
+        )->getRow()->cnt;
+
+        $active = (int) $db->query(
+            "SELECT COUNT(*) AS cnt FROM `{$table}` WHERE deleted_at IS NULL AND status = 'Active'"
+        )->getRow()->cnt;
+
+        $newThisMonth = (int) $db->query(
+            "SELECT COUNT(*) AS cnt FROM `{$table}`
+             WHERE deleted_at IS NULL
+               AND MONTH(created_at) = MONTH(CURDATE())
+               AND YEAR(created_at)  = YEAR(CURDATE())"
+        )->getRow()->cnt;
+
+        // Assistance Priority = all Active households (no member threshold)
+        $assistancePriority = (int) $db->query(
+            "SELECT COUNT(*) AS cnt FROM `{$table}`
+             WHERE deleted_at IS NULL
+               AND status = 'Active'"
+        )->getRow()->cnt;
+
+        return [
+            'total_households'    => $total,
+            'active_households'   => $active,
+            'new_households'      => $newThisMonth,
+            'assistance_priority' => $assistancePriority
+        ];
+    }
+
+    // ==============================
+    // ASSISTANCE PRIORITY LIST
+    // All Active households — no member threshold
+    // ==============================
+    public function getAssistancePriorityList(): array
+    {
+        return $this->db->query(
+            "SELECT id, head_name, address_line1, purok, barangay,
+                    city_municipality, province, total_members, status, created_at
+             FROM `{$this->table}`
+             WHERE deleted_at IS NULL
+               AND status = 'Active'
+             ORDER BY total_members DESC, head_name ASC"
+        )->getResultArray();
+    }
+
+    // ==============================
+    // DUPLICATE HEAD CHECK
+    // ==============================
+    public function isDuplicateHead(string $headName, ?int $excludeId = null): bool
+    {
+        $builder = $this->db->table($this->table);
+        $builder->where('deleted_at IS NULL');
+        $builder->where('head_name', $headName);
+        if ($excludeId) {
+            $builder->where('id !=', $excludeId);
+        }
+        return $builder->countAllResults() > 0;
     }
 }
