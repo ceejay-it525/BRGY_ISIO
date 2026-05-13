@@ -699,11 +699,10 @@
           <?php
             $db = \Config\Database::connect();
             $latestBlotter = $db->table('blotter')
-              ->where('deleted_at IS NULL')
-              ->orderBy('id', 'DESC')
-              ->limit(8)
-              ->get()
-              ->getResultArray();
+    ->orderBy('id', 'DESC')
+    ->limit(8)
+    ->get()
+    ->getResultArray();
           ?>
           <?php if (empty($latestBlotter)): ?>
             <div class="empty-state"><i class="fas fa-gavel"></i><p>No blotter complaints found.</p></div>
