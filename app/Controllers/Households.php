@@ -12,7 +12,7 @@ class Households extends BaseController
     private const BARANGAY          = 'Isio';
     private const CITY_MUNICIPALITY = 'Cauayan';
     private const PROVINCE          = 'Negros Occidental';
-    private const ZIP_CODE          = '6126';
+    private const ZIP_CODE          = '6112';
 
     public function __construct()
     {

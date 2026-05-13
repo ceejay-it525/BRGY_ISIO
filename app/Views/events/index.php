@@ -1,3 +1,4 @@
+
 <?= $this->extend('theme/template') ?>
 
 <?= $this->section('content') ?>
@@ -248,6 +249,9 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script>const baseUrl = "<?= base_url() ?>";</script>
+<script>
+    const baseUrl = "<?= base_url() ?>/"; 
+    const csrfTokenName = "<?= csrf_token() ?>";
+</script>
 <script src="<?= base_url('js/events/events.js') ?>"></script>
 <?= $this->endSection() ?>

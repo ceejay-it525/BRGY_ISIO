@@ -2,20 +2,20 @@
 
 namespace App\Controllers;
 
+use App\Models\EventsModel;
 use CodeIgniter\Controller;
 
 class Events extends Controller
 {
     use \CodeIgniter\API\ResponseTrait;
 
-    protected $db;
+    protected $eventsModel;
 
     public function __construct()
     {
-        $this->db = \Config\Database::connect();
+        $this->eventsModel = new EventsModel();
     }
 
-    // ─── Index ────────────────────────────────────────────────────────────────
     public function index()
     {
         $data = [
@@ -24,41 +24,50 @@ class Events extends Controller
         return view('events/index', $data);
     }
 
-    // ─── Fetch All Events (for DataTable) ────────────────────────────────────────
     public function fetchRecords()
     {
         $draw        = $this->request->getPost('draw');
         $start       = (int)($this->request->getPost('start') ?? 0);
         $length      = (int)($this->request->getPost('length') ?? 10);
         $searchValue = $this->request->getPost('search')['value'] ?? '';
+        $order       = $this->request->getPost('order');
 
-        // Build query
-        $builder = $this->db->table('barangay_events');
+        $builder = $this->eventsModel->builder();
         
-        // Search
+        // Search Logic
         if (!empty($searchValue)) {
-            $builder->groupStart();
-            $builder->like('title', $searchValue);
-            $builder->orLike('description', $searchValue);
-            $builder->orLike('event_date', $searchValue);
-            $builder->groupEnd();
+            $builder->groupStart()
+                ->like('title', $searchValue)
+                ->orLike('description', $searchValue)
+                ->orLike('event_date', $searchValue)
+                ->groupEnd();
         }
 
-        // Get total count
-        $totalRecords = $this->db->table('barangay_events')->countAllResults();
+        // Server-side Sorting
+        if ($order) {
+            $columns = [
+                2 => 'title',
+                3 => 'description',
+                4 => 'event_date',
+                5 => 'event_date',
+            ];
+            $colIdx = $order[0]['column'];
+            $colDir = $order[0]['dir'];
+            if (isset($columns[$colIdx])) {
+                $builder->orderBy($columns[$colIdx], $colDir);
+            }
+        } else {
+            $builder->orderBy('event_date', 'DESC');
+        }
 
-        // Get filtered count
+        $totalRecords = $this->eventsModel->countAllResults(false);
         $filteredRecords = $builder->countAllResults(false);
+        $result = $builder->limit($length, $start)->get()->getResultArray();
 
-        // Get data with pagination
-        $builder->orderBy('event_date', 'DESC');
-        $builder->limit($length, $start);
-        $result = $builder->get()->getResultArray();
-
-        // Format dates
+        // Data Transformation
         foreach ($result as &$row) {
             $row['formatted_date'] = date('F d, Y', strtotime($row['event_date']));
-            $row['days_until'] = ceil((strtotime($row['event_date']) - time()) / 86400);
+            $row['days_until'] = (int)ceil((strtotime($row['event_date']) - time()) / 86400);
         }
 
         return $this->response->setJSON([
@@ -66,10 +75,10 @@ class Events extends Controller
             'recordsTotal'    => $totalRecords,
             'recordsFiltered' => $filteredRecords,
             'data'            => $result,
+            'csrf_hash'       => csrf_hash(), 
         ]);
     }
 
-    // ─── Save (insert) ────────────────────────────────────────────────────────
     public function save()
     {
         $rules = [
@@ -83,25 +92,14 @@ class Events extends Controller
         if (!$this->validate($rules)) {
             return $this->response->setJSON([
                 'status'    => 422,
-                'message'   => 'Validation failed',
                 'errors'    => $this->validator->getErrors(),
                 'csrf_hash' => csrf_hash(),
             ])->setStatusCode(422);
         }
 
-        $data = [
-            'title'       => $this->request->getPost('title'),
-            'description' => $this->request->getPost('description') ?: null,
-            'event_date'  => $this->request->getPost('event_date'),
-            'color'       => $this->request->getPost('color'),
-            'icon'        => $this->request->getPost('icon'),
-            'created_at'  => date('Y-m-d H:i:s'),
-        ];
-
-        $builder = $this->db->table('barangay_events');
-        $result = $builder->insert($data);
-
-        if ($result) {
+        $data = $this->request->getPost(['title', 'description', 'event_date', 'color', 'icon']);
+        
+        if ($this->eventsModel->insert($data)) {
             return $this->response->setJSON([
                 'status'    => 200,
                 'message'   => 'Event created successfully.',
@@ -109,110 +107,44 @@ class Events extends Controller
             ]);
         }
 
-        return $this->response->setJSON([
-            'status'    => 500,
-            'message'   => 'Failed to save event.',
-            'csrf_hash' => csrf_hash(),
-        ])->setStatusCode(500);
+        return $this->response->setJSON(['status' => 500, 'csrf_hash' => csrf_hash()])->setStatusCode(500);
     }
 
-    // ─── Edit (fetch single record as JSON) ───────────────────────────────────
     public function edit($id)
     {
-        $builder = $this->db->table('barangay_events');
-        $data = $builder->where('id', $id)->get()->getRowArray();
+        $data = $this->eventsModel->find($id);
 
         if ($data) {
+            $data['formatted_date'] = date('F d, Y', strtotime($data['event_date']));
+            $data['days_until'] = (int)ceil((strtotime($data['event_date']) - time()) / 86400);
+            $data['csrf_hash'] = csrf_hash();
             return $this->response->setJSON($data);
         }
 
-        return $this->response->setJSON([
-            'status'  => 404,
-            'message' => 'Event not found.',
-        ])->setStatusCode(404);
+        return $this->response->setJSON(['status' => 404, 'csrf_hash' => csrf_hash()])->setStatusCode(404);
     }
 
-    // ─── Update ───────────────────────────────────────────────────────────────
     public function update($id)
     {
-        $rules = [
-            'title'       => 'required|max_length[255]',
-            'description' => 'permit_empty|max_length[1000]',
-            'event_date'  => 'required|valid_date',
-            'color'       => 'required|in_list[primary,success,warning,danger,info,secondary]',
-            'icon'        => 'required|max_length[50]',
-        ];
-
+        $rules = $this->eventsModel->getValidationRules();
         if (!$this->validate($rules)) {
-            return $this->response->setJSON([
-                'status'    => 422,
-                'message'   => 'Validation failed',
-                'errors'    => $this->validator->getErrors(),
-                'csrf_hash' => csrf_hash(),
-            ])->setStatusCode(422);
+             return $this->response->setJSON(['status' => 422, 'errors' => $this->validator->getErrors(), 'csrf_hash' => csrf_hash()]);
         }
 
-        $data = [
-            'title'       => $this->request->getPost('title'),
-            'description' => $this->request->getPost('description') ?: null,
-            'event_date'  => $this->request->getPost('event_date'),
-            'color'       => $this->request->getPost('color'),
-            'icon'        => $this->request->getPost('icon'),
-            'updated_at'  => date('Y-m-d H:i:s'),
-        ];
-
-        $builder = $this->db->table('barangay_events');
-        $result = $builder->where('id', $id)->update($data);
-
-        if ($result) {
-            return $this->response->setJSON([
-                'status'    => 200,
-                'message'   => 'Event updated successfully.',
-                'csrf_hash' => csrf_hash(),
-            ]);
+        $data = $this->request->getPost(['title', 'description', 'event_date', 'color', 'icon']);
+        
+        if ($this->eventsModel->update($id, $data)) {
+            return $this->response->setJSON(['status' => 200, 'message' => 'Updated!', 'csrf_hash' => csrf_hash()]);
         }
 
-        return $this->response->setJSON([
-            'status'    => 500,
-            'message'   => 'Failed to update event.',
-            'csrf_hash' => csrf_hash(),
-        ])->setStatusCode(500);
+        return $this->response->setJSON(['status' => 500, 'csrf_hash' => csrf_hash()]);
     }
 
-    // ─── Delete ───────────────────────────────────────────────────────────────
     public function delete($id)
     {
-        $builder = $this->db->table('barangay_events');
-        $result = $builder->where('id', $id)->delete();
-
-        if ($result) {
-            return $this->response->setJSON([
-                'status'    => 200,
-                'message'   => 'Event deleted successfully.',
-                'csrf_hash' => csrf_hash(),
-            ]);
+        if ($this->eventsModel->delete($id)) {
+            return $this->response->setJSON(['status' => 200, 'csrf_hash' => csrf_hash()]);
         }
-
-        return $this->response->setJSON([
-            'status'    => 500,
-            'message'   => 'Failed to delete event.',
-            'csrf_hash' => csrf_hash(),
-        ])->setStatusCode(500);
-    }
-
-    // ─── Get upcoming events for dashboard ─────────────────────────────────────
-    public function upcoming()
-    {
-        $builder = $this->db->table('barangay_events');
-        $events = $builder->where('event_date >=', date('Y-m-d'))
-            ->orderBy('event_date', 'ASC')
-            ->limit(4)
-            ->get()
-            ->getResultArray();
-
-        return $this->response->setJSON([
-            'status' => 200,
-            'events' => $events,
-        ]);
+        return $this->response->setJSON(['status' => 500, 'csrf_hash' => csrf_hash()]);
     }
 }

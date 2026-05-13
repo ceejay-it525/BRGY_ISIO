@@ -3,14 +3,17 @@
 namespace App\Controllers;
 
 use App\Models\BarangayOfficialsModel;
+use CodeIgniter\API\ResponseTrait;
 
 class BarangayOfficials extends BaseController
 {
-    protected $model;
+    use ResponseTrait;
+
+    protected $barangayOfficialsModel;
 
     public function __construct()
     {
-        $this->model = new BarangayOfficialsModel();
+        $this->barangayOfficialsModel = new BarangayOfficialsModel();
     }
 
     public function index()
@@ -25,23 +28,17 @@ class BarangayOfficials extends BaseController
         $draw   = (int) $request->getPost('draw');
         $start  = (int) $request->getPost('start');
         $length = (int) $request->getPost('length');
-        $search = '';
-
+        
         $searchPost = $request->getPost('search');
-        if (is_array($searchPost)) {
-            $search = $searchPost['value'] ?? '';
-        } else {
-            $search = $request->getPost('search[value]') ?? '';
-        }
+        $search = is_array($searchPost) ? ($searchPost['value'] ?? '') : ($request->getPost('search[value]') ?? '');
 
-        $result = $this->model->getRecords($start, $length, $search);
+        $result = $this->barangayOfficialsModel->getRecords($start, $length, $search);
 
         $data = [];
         foreach ($result['data'] as $row) {
             $row['full_name'] = trim("{$row['first_name']} {$row['middle_name']} {$row['last_name']}");
-            $photo = isset($row['photo']) ? $row['photo'] : null;
-            $row['photo_url'] = $photo
-                ? base_url("uploads/officials/{$photo}")
+            $row['photo_url'] = (!empty($row['photo'])) 
+                ? base_url("uploads/officials/{$row['photo']}") 
                 : '';
             $row['term_end_display'] = $row['term_end'] ?: 'Present';
             $row['status_badge'] = $row['status'] === 'Active'
@@ -52,7 +49,7 @@ class BarangayOfficials extends BaseController
 
         return $this->response->setJSON([
             'draw' => $draw,
-            'recordsTotal' => $this->model->countAll(),
+            'recordsTotal' => $this->barangayOfficialsModel->countAllResults(),
             'recordsFiltered' => $result['filtered'],
             'data' => $data,
             'csrf_hash' => csrf_hash()
@@ -61,17 +58,24 @@ class BarangayOfficials extends BaseController
 
     public function save()
     {
-        $photo = $this->request->getFile('photo');
-        $data = $this->request->getPost();
-
-        if (!$this->validate([
+        $rules = [
             'first_name' => 'required',
             'last_name'  => 'required',
             'position'   => 'required',
-            'photo'      => 'permit_empty|mime_in[photo,image/jpg,image/jpeg,image/png,image/gif]|max_size[photo,2048]'
-        ])) {
-            return $this->fail('Validation failed');
+            'photo'      => 'permit_empty|is_image[photo]|max_size[photo,2048]'
+        ];
+
+        if (!$this->validate($rules)) {
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'Validation failed',
+                'errors'    => $this->validator->getErrors(),
+                'csrf_hash' => csrf_hash()
+            ]);
         }
+
+        $data = $this->request->getPost();
+        $photo = $this->request->getFile('photo');
 
         if ($photo && $photo->isValid() && !$photo->hasMoved()) {
             $destination = FCPATH . 'uploads/officials/';
@@ -83,18 +87,24 @@ class BarangayOfficials extends BaseController
             $data['photo'] = $photoName;
         }
 
-        $this->model->insert($data);
+        if ($this->barangayOfficialsModel->insert($data)) {
+            return $this->response->setJSON([
+                'status'    => 'success',
+                'message'   => 'Saved successfully',
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
 
         return $this->response->setJSON([
-            'status'    => 'success',
-            'message'   => 'Saved successfully',
+            'status'    => 'error',
+            'message'   => 'Failed to save',
             'csrf_hash' => csrf_hash()
         ]);
     }
 
     public function get($id)
     {
-        $data = $this->model->find($id);
+        $data = $this->barangayOfficialsModel->find($id);
 
         if (!$data) {
             return $this->failNotFound('Not found');
@@ -110,17 +120,24 @@ class BarangayOfficials extends BaseController
     public function update()
     {
         $id = $this->request->getPost('id');
-        $photo = $this->request->getFile('photo');
-        $data = $this->request->getPost();
-
-        if (!$this->validate([
+        
+        $rules = [
             'first_name' => 'required',
             'last_name'  => 'required',
             'position'   => 'required',
-            'photo'      => 'permit_empty|mime_in[photo,image/jpg,image/jpeg,image/png,image/gif]|max_size[photo,2048]'
-        ])) {
-            return $this->fail('Validation failed');
+            'photo'      => 'permit_empty|is_image[photo]|max_size[photo,2048]'
+        ];
+
+        if (!$this->validate($rules)) {
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'Validation failed',
+                'csrf_hash' => csrf_hash()
+            ]);
         }
+
+        $data = $this->request->getPost();
+        $photo = $this->request->getFile('photo');
 
         if ($photo && $photo->isValid() && !$photo->hasMoved()) {
             $destination = FCPATH . 'uploads/officials/';
@@ -132,22 +149,33 @@ class BarangayOfficials extends BaseController
             $data['photo'] = $photoName;
         }
 
-        $this->model->update($id, $data);
+        if ($this->barangayOfficialsModel->update($id, $data)) {
+            return $this->response->setJSON([
+                'status'    => 'success',
+                'message'   => 'Updated successfully',
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
 
         return $this->response->setJSON([
-            'status'    => 'success',
-            'message'   => 'Updated successfully',
+            'status'    => 'error',
+            'message'   => 'Update failed',
             'csrf_hash' => csrf_hash()
         ]);
     }
 
     public function delete($id)
     {
-        $this->model->delete($id);
-
+        if ($this->barangayOfficialsModel->delete($id)) {
+            return $this->response->setJSON([
+                'status'    => 'success',
+                'message'   => 'Deleted successfully',
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
         return $this->response->setJSON([
-            'status'    => 'success',
-            'message'   => 'Deleted successfully',
+            'status'    => 'error',
+            'message'   => 'Delete failed',
             'csrf_hash' => csrf_hash()
         ]);
     }
