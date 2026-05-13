@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class ReportsModel extends Model
 {
-    protected $table      = 'reports';
+    protected $table = 'reports';
     protected $primaryKey = 'id';
     protected $allowedFields = [
         'title',
