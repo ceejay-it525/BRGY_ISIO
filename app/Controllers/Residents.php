@@ -55,40 +55,60 @@ class Residents extends BaseController
     // ==============================
     public function residentStats()
     {
+        // Force JSON header immediately
+        $this->response->setHeader('Content-Type', 'application/json');
+
         $db = \Config\Database::connect();
 
-        // Try with deleted_at filter first; fall back without it if column missing
+        $defaults = [
+            'total_residents'  => 0,
+            'active_residents' => 0,
+            'total_voters'     => 0,
+            'male_residents'   => 0,
+            'female_residents' => 0,
+        ];
+
+        // Check if deleted_at column exists
+        $hasDeletedAt = false;
         try {
-            $row = $db->query("
-                SELECT
-                    COUNT(*) AS total_residents,
-                    SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) AS active_residents,
-                    SUM(CASE WHEN is_voter = 1    THEN 1 ELSE 0 END) AS total_voters,
-                    SUM(CASE WHEN gender = 'Male'   THEN 1 ELSE 0 END) AS male_residents,
-                    SUM(CASE WHEN gender = 'Female' THEN 1 ELSE 0 END) AS female_residents
-                FROM residents
-                WHERE deleted_at IS NULL
-            ")->getRowArray();
-        } catch (\Exception $e) {
-            // deleted_at column does not exist — query without it
-            $row = $db->query("
-                SELECT
-                    COUNT(*) AS total_residents,
-                    SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) AS active_residents,
-                    SUM(CASE WHEN is_voter = 1    THEN 1 ELSE 0 END) AS total_voters,
-                    SUM(CASE WHEN gender = 'Male'   THEN 1 ELSE 0 END) AS male_residents,
-                    SUM(CASE WHEN gender = 'Female' THEN 1 ELSE 0 END) AS female_residents
-                FROM residents
-            ")->getRowArray();
+            $columns = $db->getFieldNames('residents');
+            $hasDeletedAt = in_array('deleted_at', $columns);
+        } catch (\Throwable $e) {
+            // ignore
         }
 
-        return $this->response->setJSON([
-            'total_residents'  => (int) ($row['total_residents']  ?? 0),
-            'active_residents' => (int) ($row['active_residents'] ?? 0),
-            'total_voters'     => (int) ($row['total_voters']     ?? 0),
-            'male_residents'   => (int) ($row['male_residents']   ?? 0),
-            'female_residents' => (int) ($row['female_residents'] ?? 0),
-        ]);
+        $whereClause = $hasDeletedAt ? 'WHERE deleted_at IS NULL' : '';
+
+        try {
+            $sql = "
+                SELECT
+                    COUNT(*)                                              AS total_residents,
+                    SUM(CASE WHEN status  = 'Active' THEN 1 ELSE 0 END) AS active_residents,
+                    SUM(CASE WHEN is_voter = 1        THEN 1 ELSE 0 END) AS total_voters,
+                    SUM(CASE WHEN gender  = 'Male'   THEN 1 ELSE 0 END) AS male_residents,
+                    SUM(CASE WHEN gender  = 'Female' THEN 1 ELSE 0 END) AS female_residents
+                FROM residents
+                {$whereClause}
+            ";
+
+            $row = $db->query($sql)->getRowArray();
+
+            if (empty($row)) {
+                return $this->response->setJSON($defaults);
+            }
+
+            return $this->response->setJSON([
+                'total_residents'  => (int) ($row['total_residents']  ?? 0),
+                'active_residents' => (int) ($row['active_residents'] ?? 0),
+                'total_voters'     => (int) ($row['total_voters']     ?? 0),
+                'male_residents'   => (int) ($row['male_residents']   ?? 0),
+                'female_residents' => (int) ($row['female_residents'] ?? 0),
+            ]);
+
+        } catch (\Throwable $e) {
+            log_message('error', '[residentStats] ' . $e->getMessage());
+            return $this->response->setJSON($defaults);
+        }
     }
 
     // ==============================
@@ -234,7 +254,7 @@ class Residents extends BaseController
     public function lookup()
     {
         $search = $this->request->getGet('q');
-        $page   = $this->request->getGet('page', 1);
+        $page   = (int) ($this->request->getGet('page') ?? 1);
 
         $builder = $this->residentsModel->builder();
         $builder->select('id, first_name, middle_name, last_name, suffix, address_line1, barangay, voter_id, contact_number, photo, birthdate, gender, civil_status, is_blacklisted');
@@ -342,7 +362,7 @@ class Residents extends BaseController
         } elseif ($viewType === 'voter-no') {
             $builder->where('is_voter', 0);
         } elseif (strpos($viewType, 'purok-') === 0) {
-            $purokNum = str_replace('purok-', '', $viewType);
+            $purokNum   = str_replace('purok-', '', $viewType);
             $purokLabel = ($purokNum === '7a') ? 'Purok 7A' : (($purokNum === '7b') ? 'Purok 7B' : 'Purok ' . $purokNum);
             $builder->like('address_line1', $purokLabel);
         } elseif (strpos($viewType, 'gender-') === 0) {
@@ -400,7 +420,7 @@ class Residents extends BaseController
         } elseif ($viewType === 'voter-no') {
             $builder->where('is_voter', 0);
         } elseif (strpos($viewType, 'purok-') === 0) {
-            $purokNum = str_replace('purok-', '', $viewType);
+            $purokNum   = str_replace('purok-', '', $viewType);
             $purokLabel = ($purokNum === '7a') ? 'Purok 7A' : (($purokNum === '7b') ? 'Purok 7B' : 'Purok ' . $purokNum);
             $builder->like('address_line1', $purokLabel);
         } elseif (strpos($viewType, 'gender-') === 0) {
