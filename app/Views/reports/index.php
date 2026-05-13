@@ -23,18 +23,73 @@
 }
 
 /* Page wrapper */
-.rpt-page { background:#f0f4f8; min-height:100vh; padding:0; }
+.rpt-page { 
+  background:#f0f4f8; 
+  min-height:100vh; 
+  padding:0; 
+  position: relative;
+}
+
+/* Background watermark */
+.rpt-page::before {
+  content: 'BARANGAY ISIO';
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 8rem;
+  font-weight: 900;
+  color: rgba(26, 58, 92, 0.03);
+  white-space: nowrap;
+  z-index: 0;
+  pointer-events: none;
+  letter-spacing: 10px;
+}
 
 /* Hero header */
 .rpt-hero {
   background: linear-gradient(135deg, #1a3a5c 0%, #1d6fa4 55%, #2196c4 100%);
   padding: 26px 30px 22px;
   position: relative; overflow: hidden;
+  z-index: 1;
 }
 .rpt-hero::before {
   content:''; position:absolute; top:-50px; right:-50px;
   width:220px; height:220px; background:rgba(255,255,255,0.05); border-radius:50%;
 }
+
+/* Logo styling */
+.rpt-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 10;
+}
+.rpt-logo-img {
+  width: 60px;
+  height: 60px;
+  background: #fff;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  color: #1a3a5c;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  border: 3px solid rgba(255,255,255,0.3);
+}
+.rpt-logo-text {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  line-height: 1.4;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
 .rpt-hero h1 { color:#fff; font-size:1.7rem; font-weight:700; margin:0 0 3px; letter-spacing:-.3px; }
 .rpt-hero p  { color:rgba(255,255,255,.65); font-size:.85rem; margin:0; }
 .rpt-hero .breadcrumb-row { color:rgba(255,255,255,.5); font-size:.78rem; margin-bottom:10px; }
@@ -45,6 +100,8 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 0; background:#d0dbe8; border-bottom:1px solid #d0dbe8;
+  position: relative;
+  z-index: 2;
 }
 .stat-card {
   background:#fff; padding:20px 22px;
@@ -82,7 +139,7 @@
 }
 
 /* Content wrapper */
-.rpt-body { padding:20px 24px; }
+.rpt-body { padding:20px 24px; position: relative; z-index: 2; }
 
 /* Card base */
 .rpt-card {
@@ -184,6 +241,10 @@
 
   <!-- Hero -->
   <div class="rpt-hero">
+    <div class="rpt-logo" style="display: inline-flex; align-items: center; gap: 12px; margin-bottom: 8px; position: relative; z-index: 10;">
+      <img src="<?= base_url('assets/img/isio.jpeg.png') ?>" alt="Barangay Isio Logo" style="width: 60px; height: 60px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border: 3px solid rgba(255,255,255,0.3); object-fit: cover;">
+      <div class="rpt-logo-text" style="color: #fff; font-size: 1rem; font-weight: 700; letter-spacing: 0.5px; line-height: 1.4; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Republic of the Philippines<br>Barangay Isio</div>
+    </div>
     <div class="breadcrumb-row">
       <a href="<?= base_url('/') ?>"><i class="fas fa-home"></i> Home</a>
       <span style="margin:0 6px;">/</span> Reports & Statistics
@@ -637,9 +698,12 @@
           </div>
           <?php
             $db = \Config\Database::connect();
-            $latestBlotter = $db->query(
-              "SELECT * FROM blotter ORDER BY id DESC LIMIT 8"
-            )->getResultArray();
+            $latestBlotter = $db->table('blotter')
+              ->where('deleted_at IS NULL')
+              ->orderBy('id', 'DESC')
+              ->limit(8)
+              ->get()
+              ->getResultArray();
           ?>
           <?php if (empty($latestBlotter)): ?>
             <div class="empty-state"><i class="fas fa-gavel"></i><p>No blotter complaints found.</p></div>

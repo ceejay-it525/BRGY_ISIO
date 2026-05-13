@@ -284,7 +284,7 @@
     </a>
 
     <div class="sidebar">
-        <!-- Optional user panel -->
+        <!-- User panel -->
         <div class="sidebar-user-panel mt-2">
             <div class="user-avatar"><?= strtoupper(substr(session('fullname') ?? 'A', 0, 1)) ?></div>
             <div class="user-info">
@@ -309,14 +309,113 @@
                     </a>
                 </li>
 
+                <!-- ── CORE MODULES ─────────────────── -->
+                <li class="nav-header">Core Modules</li>
+
+                <li class="nav-item">
+                    <a href="<?= base_url('residents') ?>"
+                       class="nav-link <?= (uri_string() == 'residents') ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-users text-primary"></i>
+                        <p>
+                            <span>Residents</span>
+                        </p>
+                    </a>
+                </li>
+
+
+                
+                <li class="nav-item">
+                    <a href="<?= base_url('barangay-officials') ?>"
+                       class="nav-link <?= (uri_string() == 'barangay-officials') ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-user-tie text-warning"></i>
+                        <p>
+                            <span>Officials</span>
+                        </p>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a href="<?= base_url('households') ?>"
+                       class="nav-link <?= (uri_string() == 'households') ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-home text-success"></i>
+                        <p>
+                            <span>Households</span>
+                        </p>
+                    </a>
+                </li>
+
+                
+                <li class="nav-item">
+                    <a href="<?= base_url('blotter') ?>"
+                       class="nav-link <?= (uri_string() == 'blotter') ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-file-alt text-danger"></i>
+                        <p>
+                            <span>Blotter</span>
+                        </p>
+                    </a>
+                </li>
+                <!-- ── SERVICES ─────────────────────── -->
+                <li class="nav-header">Services</li>
+
+                <li class="nav-item">
+                    <a href="<?= base_url('clearances') ?>"
+                       class="nav-link <?= (uri_string() == 'clearances') ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-certificate text-info"></i>
+                        <p>
+                            <span>Clearances</span>
+                        </p>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a href="<?= base_url('permits') ?>"
+                       class="nav-link <?= (uri_string() == 'permits') ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-store text-success"></i>
+                        <p>
+                            <span>Permits</span>
+                        </p>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a href="<?= base_url('indigents') ?>"
+                       class="nav-link <?= (uri_string() == 'indigents') ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-hand-holding-heart text-purple"></i>
+                        <p>
+                            <span>Indigents</span>
+                        </p>
+                    </a>
+                </li>
+
+                <!-- ── UTILITIES ────────────────────── -->
+                <li class="nav-header">Utilities</li>
+
+                <li class="nav-item">
+                    <a href="<?= base_url('events') ?>"
+                       class="nav-link <?= (uri_string() == 'events') ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-calendar-alt text-warning"></i>
+                        <p>
+                            <span>Events</span>
+                        </p>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a href="<?= base_url('reports') ?>"
+                       class="nav-link <?= (uri_string() == 'reports') ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-chart-bar"></i>
+                        <p>
+                            <span>Reports</span>
+                        </p>
+                    </a>
+                </li>
                 <!-- Activity Logs -->
                 <li class="nav-item">
                     <a href="<?= base_url('log') ?>"
-                       class="nav-link <?= is_active(1, 'log') ?>">
+                       class="nav-link <?= (uri_string() == 'log') ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-history"></i>
                         <p>
                             <span>Activity Logs</span>
-                            
                         </p>
                     </a>
                 </li>
@@ -333,136 +432,5 @@
                     </a>
                 </li>
 
-                <!-- ── CORE MODULES ─────────────────── -->
-                <li class="nav-header">Core Modules</li>
 
-                <li class="nav-item">
-                    <a href="<?= base_url('blotter') ?>"
-                       class="nav-link <?= (uri_string() == 'blotter') ? 'active' : '' ?>">
-                        <i class="nav-icon fas fa-file-alt text-danger"></i>
-                        <p>
-                            <span>Blotter</span>
-                            <small>Complaints log</small>
-                        </p>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="<?= base_url('residents') ?>"
-                       class="nav-link <?= (uri_string() == 'residents') ? 'active' : '' ?>">
-                        <i class="nav-icon fas fa-users text-primary"></i>
-                        <p>
-                            <span>Residents</span>
-                            <small>Population registry</small>
-                        </p>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="<?= base_url('households') ?>"
-                       class="nav-link <?= (uri_string() == 'households') ? 'active' : '' ?>">
-                        <i class="nav-icon fas fa-home text-success"></i>
-                        <p>
-                            <span>Households</span>
-                            <small>Family profiles</small>
-                        </p>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="<?= base_url('barangay-officials') ?>"
-                       class="nav-link <?= (uri_string() == 'barangay-officials') ? 'active' : '' ?>">
-                        <i class="nav-icon fas fa-user-tie text-warning"></i>
-                        <p>
-                            <span>Officials</span>
-                            <small>Elected officials</small>
-                        </p>
-                    </a>
-                </li>
-
-                <!-- ── SERVICES ─────────────────────── -->
-                <li class="nav-header">Services</li>
-
-                <li class="nav-item">
-                    <a href="<?= base_url('clearances') ?>"
-                       class="nav-link <?= (uri_string() == 'clearances') ? 'active' : '' ?>">
-                        <i class="nav-icon fas fa-certificate text-info"></i>
-                        <p>
-                            <span>Clearances</span>
-                            <small>Issue certificates</small>
-                        </p>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="<?= base_url('permits') ?>"
-                       class="nav-link <?= (uri_string() == 'permits') ? 'active' : '' ?>">
-                        <i class="nav-icon fas fa-store text-success"></i>
-                        <p>
-                            <span>Permits</span>
-                            <small>Business (BPLS)</small>
-                        </p>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="<?= base_url('indigents') ?>"
-                       class="nav-link <?= (uri_string() == 'indigents') ? 'active' : '' ?>">
-                        <i class="nav-icon fas fa-hand-holding-heart text-purple"></i>
-                        <p>
-                            <span>Indigents</span>
-                            <small>Social services</small>
-                        </p>
-                    </a>
-                </li>
-
-                <!-- ── UTILITIES ────────────────────── -->
-                <li class="nav-header">Utilities</li>
-
-                <li class="nav-item">
-                    <a href="<?= base_url('events') ?>"
-                       class="nav-link <?= (uri_string() == 'events') ? 'active' : '' ?>">
-                        <i class="nav-icon fas fa-calendar-alt text-warning"></i>
-                        <p>
-                            <span>Events</span>
-                            <small>Barangay calendar</small>
-                        </p>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="<?= base_url('reports') ?>"
-                       class="nav-link <?= (uri_string() == 'reports') ? 'active' : '' ?>">
-                        <i class="nav-icon fas fa-chart-bar"></i>
-                        <p>
-                            <span>Reports</span>
-                            <small>Analytics &amp; exports</small>
-                        </p>
-                    </a>
-                </li>
-
-                <li class="nav-item has-treeview
-                    <?= in_array(uri_string(), ['settings']) ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link
-                        <?= (uri_string() == 'settings') ? 'active' : '' ?>">
-                        <i class="nav-icon fas fa-cogs"></i>
-                        <p>
-                            <span>Settings</span>
-                            <i class="right fas fa-angle-left"></i>
-                        </p>
-                    </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="<?= base_url('settings') ?>"
-                               class="nav-link <?= (uri_string() == 'settings') ? 'active' : '' ?>">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>System Settings</p>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-
-            </ul>
-        </nav>
-    </div>
 </aside>

@@ -1,478 +1,502 @@
-// =====================================================================
-// Clearances Module — clearances.js
-// Full CRUD: DataTable (server-side) | Add | Edit | View | Delete
-// =====================================================================
+// =============================================================================
+//  clearances.js  —  Barangay Clearance Issuance System
+//  Fixed: reject modal wired, release OR# modal wired, type_name display,
+//         editClearanceType population, stats card IDs
+// =============================================================================
 
-'use strict';
-
-// ── Toast helper ──────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
+// TOAST HELPER
+// -----------------------------------------------------------------------------
 function showToast(type, message) {
-    if (typeof toastr === 'undefined') {
-        const cls = type === 'success' ? 'success' : (type === 'warning' ? 'warning' : 'danger');
-        const el = $(
-            `<div class="alert alert-${cls} alert-dismissible fade show"
-                  style="position:fixed;top:70px;right:15px;z-index:9999;min-width:280px;" role="alert">
-                ${message}
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-            </div>`
-        );
-        $('body').append(el);
-        setTimeout(() => el.fadeOut(400, () => el.remove()), 4000);
-        return;
+    if (typeof toastr !== 'undefined') {
+        toastr.options = { closeButton: true, progressBar: true, positionClass: 'toast-top-right', timeOut: 3500 };
+        if (toastr[type]) { toastr[type](message); return; }
     }
-    toastr.options = {
-        closeButton: true, progressBar: true,
-        positionClass: 'toast-top-right', timeOut: 3500
-    };
-    (toastr[type] || toastr.info)(message);
+    const cls = { success: 'success', error: 'danger', warning: 'warning', info: 'info' }[type] || 'info';
+    const el = $(`
+        <div class="alert alert-${cls} alert-dismissible fade show"
+             style="position:fixed;top:70px;right:15px;z-index:99999;min-width:300px;box-shadow:0 2px 12px rgba(0,0,0,.25)">
+            ${message}
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>`);
+    $('body').append(el);
+    setTimeout(() => el.alert('close'), 3500);
 }
 
-// ── CSRF refresh ──────────────────────────────────────────────────────────────
-function refreshCsrf(response) {
-    const token = response && (response.csrf_hash || response.csrfHash);
-    if (token) $('input[name="csrf_test_name"]').val(token);
+// -----------------------------------------------------------------------------
+// CSRF
+// -----------------------------------------------------------------------------
+function csrfData() {
+    return { csrf_test_name: $('input[name=csrf_test_name]').val() };
+}
+function updateCSRF(res) {
+    const token = res && (res.csrf_hash || res.csrfHash);
+    if (token) $('input[name=csrf_test_name]').val(token);
 }
 
-// ── Status badge ──────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
+// FORMAT HELPERS
+// -----------------------------------------------------------------------------
+function formatDate(d) {
+    if (!d || d === '0000-00-00') return '—';
+    return new Date(d).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+function formatCurrency(v) {
+    return '₱' + parseFloat(v || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 });
+}
+
 function statusBadge(status) {
     const map = {
-        'Pending'  : 'warning',
-        'Approved' : 'info',
-        'Released' : 'success',
-        'Rejected' : 'danger',
-        'Expired'  : 'secondary',
+        'Pending':  ['warning',   'fa-clock'],
+        'Approved': ['info',      'fa-check-circle'],
+        'Released': ['success',   'fa-handshake'],
+        'Rejected': ['danger',    'fa-ban'],
+        'Expired':  ['secondary', 'fa-exclamation-triangle'],
     };
-    const icons = {
-        'Pending'  : 'fa-clock',
-        'Approved' : 'fa-check',
-        'Released' : 'fa-handshake',
-        'Rejected' : 'fa-times',
-        'Expired'  : 'fa-calendar-times',
-    };
-    const color = map[status] || 'light';
-    const icon = icons[status] || '';
-    return `<span class="badge badge-${color}"><i class="fas ${icon} mr-1"></i>${status}</span>`;
+    const [cls, icon] = map[status] || ['secondary', 'fa-question-circle'];
+    return `<span class="badge badge-${cls}"><i class="fas ${icon} mr-1"></i>${status}</span>`;
 }
 
-// ── Show validation errors inside a modal ────────────────────────────────────
-function showErrors(modalId, errors) {
-    $(`#${modalId} .validation-errors`).remove();
-    let html = '<div class="alert alert-danger validation-errors alert-dismissible fade show"><button type="button" class="close" data-dismiss="alert">&times;</button><ul class="mb-0">';
-    $.each(errors, (field, msg) => { html += `<li>${msg}</li>`; });
-    html += '</ul></div>';
-    $(`#${modalId} .modal-body`).prepend(html);
+/**
+ * Workflow buttons shown in the View modal.
+ *
+ * Pending  → [Approve]  [Reject]
+ *   Approve: sets status to Approved (no OR# needed yet)
+ *   Reject:  opens reject modal to capture reason
+ *
+ * Approved → [Release]  [Reject]
+ *   Release: opens release modal to capture OR#, then marks Released
+ *   Reject:  opens reject modal
+ *
+ * Released → [Print]
+ *   Print: opens print preview modal
+ *
+ * Rejected / Expired → info badge only, no further actions
+ */
+function workflowButtons(status, id) {
+    const btn = (cls, action, icon, label) =>
+        `<button class="btn btn-${cls} btn-sm mr-1 ${action}" data-id="${id}">
+            <i class="fas ${icon} mr-1"></i>${label}
+         </button>`;
+
+    switch (status) {
+        case 'Pending':
+            return btn('info',   'approve-clearance', 'fa-check', 'Approve') +
+                   btn('danger', 'reject-clearance',  'fa-ban',   'Reject');
+        case 'Approved':
+            return btn('success', 'release-clearance', 'fa-handshake', 'Release') +
+                   btn('danger',  'reject-clearance',  'fa-ban',       'Reject');
+        case 'Released':
+            return btn('primary', 'print-clearance', 'fa-print', 'Print');
+        case 'Rejected':
+            return '<span class="badge badge-danger p-2"><i class="fas fa-ban mr-1"></i>Rejected — No Further Actions</span>';
+        case 'Expired':
+            return '<span class="badge badge-secondary p-2"><i class="fas fa-exclamation-triangle mr-1"></i>Expired — No Further Actions</span>';
+        default:
+            return '<span class="badge badge-secondary p-2">No Actions Available</span>';
+    }
 }
 
-// ── Format currency ──────────────────────────────────────────────────────────
-function formatCurrency(amount) {
-    return '₱' + parseFloat(amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-// ── Format date ──────────────────────────────────────────────────────────────
-function formatDate(dateStr) {
-    if (!dateStr || dateStr === '0000-00-00') return '—';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-// ── DataTable instance ────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
+// DATATABLE
+// -----------------------------------------------------------------------------
 let clearancesTable;
-let pendingDeleteId = null;
 
 $(function () {
 
-    // Init DataTable
     if ($.fn.DataTable.isDataTable('#clearancesTable')) {
         $('#clearancesTable').DataTable().destroy();
     }
 
     clearancesTable = $('#clearancesTable').DataTable({
-        processing  : true,
-        serverSide  : true,
-        responsive  : true,
-        pageLength  : 25,
-        order       : [[1, 'desc']],
+        processing: true,
+        serverSide: true,
+        responsive: true,
+        pageLength: 25,
+        order:      [[0, 'desc']],
         ajax: {
-            url      : baseUrl + 'clearances/fetchRecords',
-            type     : 'POST',
-            dataType : 'json',
-            data     : d => { d.csrf_test_name = $('input[name="csrf_test_name"]').val(); },
-            error    : (xhr) => {
-                console.error('fetchRecords error:', xhr.status, xhr.responseText);
-                showToast('error', 'Failed to load clearances data. Check the console for details.');
+            url:  baseUrl + 'clearances/fetchRecords',
+            type: 'POST',
+            data: function (d) {
+                return $.extend({}, d, csrfData(), { view_type: currentView });
             },
-            dataFilter: function(data) {
-                const json = JSON.parse(data);
-                // Update stats
-                updateStats(json);
-                return data;
+            error: function (xhr) {
+                console.error('❌ DataTable error:', xhr.responseText);
+                showToast('error', 'Failed to load records.');
             }
         },
         columns: [
-            { data: 'row_number',              width: '4%',  orderable: false },
-            { data: 'clearance_id',            visible: false },
-            { data: 'control_number',          defaultContent: '—' },
-            { data: 'resident_name',           defaultContent: '—' },
-            { data: 'type_name',               defaultContent: '—' },
-            { data: 'purpose',                 defaultContent: '—' },
-            { data: 'formatted_request_date',  defaultContent: '—' },
-            { 
-                data: 'issued_date',
-                render: function(data) {
-                    return data ? formatDate(data) : '<span class="text-muted">—</span>';
-                }
+            {
+                data: 'row_number', width: '4%', orderable: false, searchable: false,
+                render: d => `<span class="text-muted small">${d}</span>`
+            },
+            { data: 'clearance_id', visible: false },
+            {
+                data: 'control_number',
+                render: d => `<strong><i class="fas fa-hashtag mr-1 text-secondary"></i>${d || '—'}</strong>`
             },
             {
-                data: 'status',
-                orderable: false,
-                render: (data) => statusBadge(data)
+                data: 'resident_name',
+                render: (d, t, r) =>
+                    `<a href="javascript:void(0)" class="view-clearance-link" data-id="${r.clearance_id}">
+                        <i class="fas fa-user mr-1 text-primary"></i><strong>${d || '—'}</strong>
+                     </a>`
             },
             {
-                data: 'fee_amount',
-                render: (data) => formatCurrency(data)
+                // FIX: use type_name from joined clearance_types table
+                data: 'type_name',
+                render: d => d ? `<span class="badge badge-secondary">${d}</span>` : '<span class="text-muted">—</span>'
             },
             {
-                data      : null,
-                orderable : false,
-                searchable: false,
-                className : 'text-center',
-                width     : '12%',
-                render    : (row) => `
-                    <div class="btn-group btn-group-sm" role="group">
-                        <button class="btn btn-info btn-xs view-btn" data-id="${row.clearance_id}" title="View" data-toggle="tooltip">
+                data: 'purpose',
+                render: d => d ? (d.length > 50 ? d.substring(0, 50) + '…' : d) : '<span class="text-muted">—</span>'
+            },
+            { data: 'request_date', render: d => formatDate(d) },
+            { data: 'fee_amount',   render: v => `<strong class="text-success">${formatCurrency(v)}</strong>` },
+            { data: 'status',       render: v => statusBadge(v) },
+            {
+                data: null, orderable: false, searchable: false,
+                className: 'text-center', width: '8%',
+                render: r =>
+                    `<div class="btn-group btn-group-sm">
+                        <button class="btn btn-info    view-clearance-btn" data-id="${r.clearance_id}" title="View">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button class="btn btn-warning btn-xs edit-btn" data-id="${row.clearance_id}" title="Edit" data-toggle="tooltip">
-                            <i class="far fa-edit"></i>
+                        <button class="btn btn-warning edit-clearance"     data-id="${r.clearance_id}" title="Edit">
+                            <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-danger btn-xs delete-btn" data-id="${row.clearance_id}" title="Delete" data-toggle="tooltip">
+                        <button class="btn btn-danger  delete-clearance"   data-id="${r.clearance_id}" title="Delete">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>`
             }
         ],
         language: {
-            processing : '<i class="fas fa-spinner fa-spin"></i> Loading...',
-            emptyTable : 'No clearance records found.',
-            zeroRecords: 'No matching records found'
-        },
-        dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
-             "<'row'<'col-sm-12'tr>>" +
-             "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
-    });
-
-    // Initialize tooltips
-    $('[data-toggle="tooltip"]').tooltip();
-
-    // ── Initialize Select2 if available ──────────────────────────────────────
-    if ($.fn.select2) {
-        $('.select2resident').select2({
-            theme      : 'bootstrap4',
-            placeholder: '-- Select Resident --',
-            width      : '100%',
-        });
-    }
-
-    // Re-init Select2 when modals open (select2 + Bootstrap modal quirk)
-    $('#addClearanceModal, #editClearanceModal').on('shown.bs.modal', function () {
-        if ($.fn.select2) {
-            $(this).find('.select2resident').select2({
-                theme      : 'bootstrap4',
-                placeholder: '-- Select Resident --',
-                width      : '100%',
-                dropdownParent: $(this),
-            });
+            processing:  '<i class="fas fa-spinner fa-spin mr-1"></i>Loading…',
+            emptyTable:  '<div class="text-center py-4 text-muted"><i class="fas fa-inbox fa-2x d-block mb-2"></i>No clearances found.</div>',
+            zeroRecords: '<div class="text-center py-4 text-muted"><i class="fas fa-search fa-2x d-block mb-2"></i>No matching clearances.</div>'
         }
     });
 
-    // ── Set default dates ─────────────────────────────────────────────────────
-    const today = new Date().toISOString().split('T')[0];
-    $('#addRequestDate').val(today);
+    // -----------------------------------------------------------------------
+    // HELPERS
+    // -----------------------------------------------------------------------
+    function reloadTable() {
+        if (clearancesTable) clearancesTable.ajax.reload(null, false);
+    }
 
-    // =========================================================================
-    // ADD — submit
-    // =========================================================================
+    function fetchStats() {
+        $.get(baseUrl + 'clearances/stats', function (res) {
+            if (res.status !== 'success') return;
+            const d = res.data;
+            // KPI cards
+            $('#totalClearances')   .text(d.total    || 0);
+            $('#pendingClearances') .text(d.pending  || 0);
+            $('#releasedClearances').text(d.released || 0);
+            $('#totalRevenue')      .text(formatCurrency(d.revenue));
+            // Tab badges
+            $('#pendingCount') .text(d.pending  || 0);
+            $('#approvedCount').text(d.approved || 0);
+            $('#releasedCount').text(d.released || 0);
+            $('#rejectedCount').text(d.rejected || 0);
+            $('#expiredCount') .text(d.expired  || 0);
+        });
+    }
+
+    fetchStats();
+    setInterval(fetchStats, 30000);
+
+    // -----------------------------------------------------------------------
+    // VIEW MODAL
+    // Opened by: clicking resident name link  OR  eye icon button
+    // -----------------------------------------------------------------------
+    function openViewModal(id) {
+        if (!id) return;
+        $.get(baseUrl + 'clearances/view/' + id, function (res) {
+            if (res.status !== 'success') { showToast('error', res.message || 'Failed to load.'); return; }
+            const p = res.data;
+
+            $('#viewClearanceId')  .val(id);
+            $('#viewControlNumber').text(p.control_number || '—');
+            $('#viewResidentName') .text(p.resident_name  || '—');
+            $('#viewAddress')      .text(p.address_line1  || '—');
+            // FIX: use type_name from the join (not clearance_type string column)
+            $('#viewClearanceType').text(p.type_name      || '—');
+            $('#viewPurpose')      .text(p.purpose        || '—');
+            $('#viewRequestDate')  .text(formatDate(p.request_date));
+            $('#viewIssuedDate')   .text(formatDate(p.issued_date));
+            $('#viewExpiryDate')   .text(formatDate(p.expiry_date));
+            $('#viewFee')          .text(formatCurrency(p.fee_amount));
+            $('#viewOrNumber')     .text(p.or_number      || '—');
+            $('#viewStatus')       .html(statusBadge(p.status));
+
+            $('#workflowActions').html(workflowButtons(p.status, id));
+
+            // History
+            let historyHtml = '';
+            if (res.history && res.history.length > 0) {
+                historyHtml = '<ul class="list-group list-group-flush">';
+                res.history.forEach(h => {
+                    historyHtml += `<li class="list-group-item small">
+                        <strong>${h.clearance_type || 'Clearance'}</strong>
+                        <span class="text-muted mx-1">·</span>
+                        ${formatDate(h.request_date)}
+                        <span class="float-right">${statusBadge(h.status)}</span>
+                    </li>`;
+                });
+                historyHtml += '</ul>';
+            } else {
+                historyHtml = '<p class="text-muted text-center py-3"><i class="fas fa-history mr-1"></i>No previous clearances</p>';
+            }
+            $('#clearanceHistory').html(historyHtml);
+
+            $('#viewClearanceModal').modal('show');
+        }).fail(() => showToast('error', 'Network error. Please try again.'));
+    }
+
+    $(document).on('click', '.view-clearance-link', function (e) {
+        e.preventDefault();
+        openViewModal($(this).data('id'));
+    });
+
+    $(document).on('click', '.view-clearance-btn', function () {
+        openViewModal($(this).data('id'));
+    });
+
+    // "Edit" button inside View modal — closes view and opens edit
+    $(document).on('click', '#editFromViewBtn', function () {
+        const id = $('#viewClearanceId').val();
+        $('#viewClearanceModal').modal('hide');
+        openEditModal(id);
+    });
+
+    // -----------------------------------------------------------------------
+    // ADD CLEARANCE
+    // Triggered by: "Issue New Clearance" button
+    // -----------------------------------------------------------------------
     $('#addClearanceForm').on('submit', function (e) {
         e.preventDefault();
+        const $btn = $(this).find('[type=submit]')
+            .prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Saving…');
 
-        const $btn  = $('#addSaveBtn');
-        const $form = $(this);
-        const orig  = $btn.html();
-
-        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Saving…');
-
-        $.ajax({
-            url         : baseUrl + 'clearances/save',
-            method      : 'POST',
-            data        : new FormData(this),
-            processData : false,
-            contentType : false,
-            dataType    : 'json',
-            success: function (res) {
-                refreshCsrf(res);
-                if (res.status === 200) {
-                    $form[0].reset();
-                    $('#addClearanceModal').modal('hide');
-                    showToast('success', res.message || 'Clearance issued successfully!');
-                    clearancesTable.ajax.reload(null, false);
-                } else if (res.status === 422) {
-                    showErrors('addClearanceModal', res.errors);
-                } else {
-                    showToast('error', res.message || 'Failed to save clearance.');
-                }
-            },
-            error: function (xhr) {
-                console.error('Save error:', xhr.responseText);
-                try {
-                    const res = JSON.parse(xhr.responseText);
-                    if (res.errors) { showErrors('addClearanceModal', res.errors); return; }
-                } catch (err) { /* not JSON */ }
-                showToast('error', 'An error occurred. Please try again.');
-            },
-            complete: () => $btn.prop('disabled', false).html(orig)
-        });
+        $.post(baseUrl + 'clearances/save', $(this).serialize(), function (res) {
+            updateCSRF(res);
+            if (res.status === 'success') {
+                $('#AddNewModal').modal('hide');
+                document.getElementById('addClearanceForm').reset();
+                showToast('success', res.message);
+                reloadTable();
+                fetchStats();
+            } else {
+                showToast('error', res.message || 'Save failed.');
+            }
+        }, 'json')
+        .fail(() => showToast('error', 'Server error.'))
+        .always(() => $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Save Clearance'));
     });
 
-    // =========================================================================
-    // EDIT — load record
-    // =========================================================================
-    $(document).on('click', '.edit-btn', function () {
-        const id = $(this).data('id');
-
-        $.get(baseUrl + 'clearances/edit/' + id)
-            .done(function (res) {
-                if (!res || !res.clearance_id) {
-                    showToast('error', 'Record not found.');
-                    return;
-                }
-                $('#editClearanceId').val(res.clearance_id);
-                $('#editControlNumber').val(res.control_number  || '');
-                $('#editResidentId').val(res.resident_id        || '').trigger('change');
-                $('#editClearanceTypeId').val(res.clearance_type_id || '');
-                $('#editPurpose').val(res.purpose               || '');
-                $('#editRequestDate').val(res.request_date      || '');
-                $('#editIssuedDate').val(res.issued_date        || '');
-                $('#editExpiryDate').val(res.expiry_date        || '');
-                $('#editStatus').val(res.status                 || 'Pending');
-                $('#editFeeAmount').val(res.fee_amount          || '0.00');
-                $('#editOrNumber').val(res.or_number            || '');
-                $('#editRemarks').val(res.remarks               || '');
-                $('#editClearanceModal .validation-errors').remove();
-                $('#editClearanceModal').modal('show');
-                refreshCsrf(res);
-            })
-            .fail(function (xhr) {
-                console.error('Edit load error:', xhr.responseText);
-                showToast('error', 'Failed to load record.');
-            });
+    $('#AddNewModal').on('hidden.bs.modal', function () {
+        document.getElementById('addClearanceForm').reset();
     });
 
-    // =========================================================================
-    // EDIT — submit update
-    // =========================================================================
+    // -----------------------------------------------------------------------
+    // EDIT CLEARANCE
+    // Triggered by: pencil icon in table row, or "Edit" in View modal
+    // -----------------------------------------------------------------------
+    function openEditModal(id) {
+        if (!id) return;
+        $.get(baseUrl + 'clearances/edit/' + id, function (res) {
+            if (res.status !== 'success') { showToast('error', res.message || 'Failed to load.'); return; }
+            const p = res.data;
+            $('#editClearanceId')  .val(p.clearance_id);
+            $('#editResidentId')   .val(p.resident_id);
+            // FIX: populate clearance type dropdown from type_name returned by controller
+            $('#editClearanceType').val(p.type_name || '');
+            $('#editPurpose')      .val(p.purpose);
+            $('#editFeeAmount')    .val(p.fee_amount);
+            $('#editStatus')       .val(p.status);
+            $('#editRemarks')      .val(p.remarks);
+            $('#editClearanceModal').modal('show');
+        }).fail(() => showToast('error', 'Network error.'));
+    }
+
+    $(document).on('click', '.edit-clearance', function () {
+        openEditModal($(this).data('id'));
+    });
+
     $('#editClearanceForm').on('submit', function (e) {
         e.preventDefault();
+        const $btn = $(this).find('[type=submit]')
+            .prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Updating…');
 
-        const id    = $('#editClearanceId').val();
-        const $btn  = $('#editSaveBtn');
-        const $form = $(this);
-        const orig  = $btn.html();
-
-        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Updating…');
-
-        $.ajax({
-            url         : baseUrl + 'clearances/update/' + id,
-            method      : 'POST',
-            data        : new FormData(this),
-            processData : false,
-            contentType : false,
-            dataType    : 'json',
-            success: function (res) {
-                refreshCsrf(res);
-                if (res.status === 200) {
-                    $form[0].reset();
-                    $('#editClearanceModal').modal('hide');
-                    showToast('success', res.message || 'Clearance updated successfully!');
-                    clearancesTable.ajax.reload(null, false);
-                } else if (res.status === 422) {
-                    showErrors('editClearanceModal', res.errors);
-                } else {
-                    showToast('error', res.message || 'Failed to update clearance.');
-                }
-            },
-            error: function (xhr) {
-                console.error('Update error:', xhr.responseText);
-                try {
-                    const res = JSON.parse(xhr.responseText);
-                    if (res.errors) { showErrors('editClearanceModal', res.errors); return; }
-                } catch (err) { /* not JSON */ }
-                showToast('error', 'An error occurred. Please try again.');
-            },
-            complete: () => $btn.prop('disabled', false).html(orig)
-        });
-    });
-
-    // =========================================================================
-    // VIEW — show details
-    // =========================================================================
-    $(document).on('click', '.view-btn', function () {
-        const id = $(this).data('id');
-
-        $.get(baseUrl + 'clearances/edit/' + id)
-            .done(function (res) {
-                if (!res || !res.clearance_id) {
-                    showToast('error', 'Record not found.');
-                    return;
-                }
-                $('#viewClearanceBody').html(`
-                    <div class="row">
-                        <div class="col-md-6">
-                            <table class="table table-sm table-borderless">
-                                <tr>
-                                    <th width="40%"><i class="fas fa-hashtag mr-2 text-muted"></i>Control Number</th>
-                                    <td><strong>${res.control_number || '—'}</strong></td>
-                                </tr>
-                                <tr>
-                                    <th><i class="fas fa-user mr-2 text-muted"></i>Resident</th>
-                                    <td>${res.resident_name || '—'} (ID: ${res.resident_id || '—'})</td>
-                                </tr>
-                                <tr>
-                                    <th><i class="fas fa-tag mr-2 text-muted"></i>Clearance Type</th>
-                                    <td>${res.type_name || '—'} (ID: ${res.clearance_type_id || '—'})</td>
-                                </tr>
-                                <tr>
-                                    <th><i class="fas fa-bullseye mr-2 text-muted"></i>Purpose</th>
-                                    <td>${res.purpose || '—'}</td>
-                                </tr>
-                            </table>
-                        </div>
-                        <div class="col-md-6">
-                            <table class="table table-sm table-borderless">
-                                <tr>
-                                    <th width="40%"><i class="fas fa-calendar-alt mr-2 text-muted"></i>Request Date</th>
-                                    <td>${res.request_date ? formatDate(res.request_date) : '—'}</td>
-                                </tr>
-                                <tr>
-                                    <th><i class="fas fa-calendar-check mr-2 text-muted"></i>Issued Date</th>
-                                    <td>${res.issued_date ? formatDate(res.issued_date) : '—'}</td>
-                                </tr>
-                                <tr>
-                                    <th><i class="fas fa-calendar-times mr-2 text-muted"></i>Expiry Date</th>
-                                    <td>${res.expiry_date ? formatDate(res.expiry_date) : '—'}</td>
-                                </tr>
-                                <tr>
-                                    <th><i class="fas fa-info-circle mr-2 text-muted"></i>Status</th>
-                                    <td>${statusBadge(res.status)}</td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <table class="table table-sm table-borderless">
-                                <tr>
-                                    <th width="40%"><i class="fas fa-money-bill mr-2 text-muted"></i>Fee Amount</th>
-                                    <td><strong>${formatCurrency(res.fee_amount)}</strong></td>
-                                </tr>
-                                <tr>
-                                    <th><i class="fas fa-receipt mr-2 text-muted"></i>OR Number</th>
-                                    <td>${res.or_number || '—'}</td>
-                                </tr>
-                            </table>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label><i class="fas fa-comment-alt mr-2 text-muted"></i>Remarks</label>
-                                <p class="text-muted mb-0">${res.remarks || 'No remarks'}</p>
-                            </div>
-                        </div>
-                    </div>
-                `);
-                $('#viewClearanceModal').modal('show');
-            })
-            .fail(() => showToast('error', 'Failed to load record.'));
-    });
-
-    // =========================================================================
-    // DELETE — show confirmation modal
-    // =========================================================================
-    $(document).on('click', '.delete-btn', function () {
-        pendingDeleteId = $(this).data('id');
-        $('#deleteConfirmModal').modal('show');
-    });
-
-    // =========================================================================
-    // DELETE — confirm
-    // =========================================================================
-    $('#confirmDeleteBtn').on('click', function () {
-        if (!pendingDeleteId) {
-            showToast('error', 'No record selected for deletion.');
-            return;
-        }
-
-        const $btn = $(this);
-        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Deleting…');
-
-        $.ajax({
-            url      : baseUrl + 'clearances/delete/' + pendingDeleteId,
-            method   : 'POST',
-            data     : { csrf_test_name: $('input[name="csrf_test_name"]').val() },
-            dataType : 'json',
-            success  : function (res) {
-                refreshCsrf(res);
-                if (res.status === 200) {
-                    showToast('success', res.message || 'Clearance deleted successfully!');
-                    clearancesTable.ajax.reload(null, false);
-                    $('#deleteConfirmModal').modal('hide');
-                } else {
-                    showToast('error', res.message || 'Failed to delete clearance.');
-                }
-            },
-            error: function (xhr) {
-                console.error('Delete error:', xhr.responseText);
-                showToast('error', 'An error occurred. Please try again.');
-            },
-            complete: () => {
-                $btn.prop('disabled', false).html('<i class="fas fa-trash mr-1"></i> Delete');
-                pendingDeleteId = null;
+        $.post(baseUrl + 'clearances/update', $(this).serialize(), function (res) {
+            updateCSRF(res);
+            if (res.status === 'success') {
+                $('#editClearanceModal').modal('hide');
+                showToast('success', res.message);
+                reloadTable();
+                fetchStats();
+            } else {
+                showToast('error', res.message || 'Update failed.');
             }
+        }, 'json')
+        .fail(() => showToast('error', 'Server error.'))
+        .always(() => $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Update Clearance'));
+    });
+
+    // -----------------------------------------------------------------------
+    // DELETE
+    // Triggered by: trash icon in table row
+    // -----------------------------------------------------------------------
+    $(document).on('click', '.delete-clearance', function () {
+        const id = $(this).data('id');
+        if (!confirm('Delete this clearance? This cannot be undone.')) return;
+
+        $.post(baseUrl + 'clearances/delete/' + id, csrfData(), function (res) {
+            updateCSRF(res);
+            if (res.status === 'success') {
+                showToast('success', res.message);
+                reloadTable();
+                fetchStats();
+            } else {
+                showToast('error', res.message || 'Delete failed.');
+            }
+        }, 'json').fail(() => showToast('error', 'Server error.'));
+    });
+
+    // -----------------------------------------------------------------------
+    // WORKFLOW: APPROVE
+    // Triggered by: "Approve" button in View modal (Pending status)
+    // Action: sets status → Approved, no modal needed
+    // -----------------------------------------------------------------------
+    $(document).on('click', '.approve-clearance', function () {
+        const id = $(this).data('id');
+        if (!confirm('Approve this clearance request?')) return;
+
+        $(this).prop('disabled', true);
+
+        $.post(baseUrl + 'clearances/approve/' + id, csrfData(), function (res) {
+            updateCSRF(res);
+            if (res.status === 'success') {
+                $('#viewClearanceModal').modal('hide');
+                showToast('success', res.message);
+                reloadTable();
+                fetchStats();
+            } else {
+                showToast('error', res.message || 'Failed to approve.');
+            }
+        }, 'json').fail(() => showToast('error', 'Server error.'));
+    });
+
+    // -----------------------------------------------------------------------
+    // WORKFLOW: RELEASE
+    // Triggered by: "Release" button in View modal (Approved status)
+    // Action: opens #releaseModal to collect OR#, then POST to clearances/release/{id}
+    // -----------------------------------------------------------------------
+    $(document).on('click', '.release-clearance', function () {
+        const id = $(this).data('id');
+        $('#releaseClearanceId').val(id);
+        $('#releaseOrNumber').val('');
+        $('#releaseModal').modal('show');
+    });
+
+    $('#releaseForm').on('submit', function (e) {
+        e.preventDefault();
+        const id       = $('#releaseClearanceId').val();
+        const orNumber = $('#releaseOrNumber').val().trim();
+
+        if (!orNumber) { showToast('warning', 'Please enter the OR Number.'); return; }
+
+        const $btn = $(this).find('[type=submit]')
+            .prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Releasing…');
+
+        $.post(baseUrl + 'clearances/release/' + id, { ...csrfData(), or_number: orNumber }, function (res) {
+            updateCSRF(res);
+            if (res.status === 'success') {
+                $('#releaseModal').modal('hide');
+                $('#viewClearanceModal').modal('hide');
+                showToast('success', res.message);
+                reloadTable();
+                fetchStats();
+            } else {
+                showToast('error', res.message || 'Failed to release.');
+            }
+        }, 'json')
+        .fail(() => showToast('error', 'Server error.'))
+        .always(() => $btn.prop('disabled', false).html('<i class="fas fa-handshake mr-1"></i>Confirm Release'));
+    });
+
+    // -----------------------------------------------------------------------
+    // WORKFLOW: REJECT
+    // Triggered by: "Reject" button in View modal (Pending or Approved status)
+    // Action: opens #rejectModal to collect reason, then POST to clearances/reject/{id}
+    // FIX: rejectModal and rejectForm now actually exist in the view HTML
+    // -----------------------------------------------------------------------
+    $(document).on('click', '.reject-clearance', function () {
+        const id = $(this).data('id');
+        $('#rejectClearanceId').val(id);
+        $('#rejectReason').val('');
+        $('#rejectModal').modal('show');
+    });
+
+    $('#rejectForm').on('submit', function (e) {
+        e.preventDefault();
+        const id     = $('#rejectClearanceId').val();
+        const reason = $('#rejectReason').val().trim();
+
+        if (!reason) { showToast('warning', 'Please enter a rejection reason.'); return; }
+
+        const $btn = $(this).find('[type=submit]')
+            .prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Rejecting…');
+
+        $.post(baseUrl + 'clearances/reject/' + id, { ...csrfData(), reason }, function (res) {
+            updateCSRF(res);
+            if (res.status === 'success') {
+                $('#rejectModal').modal('hide');
+                $('#viewClearanceModal').modal('hide');
+                showToast('success', res.message);
+                reloadTable();
+                fetchStats();
+            } else {
+                showToast('error', res.message || 'Failed to reject.');
+            }
+        }, 'json')
+        .fail(() => showToast('error', 'Server error.'))
+        .always(() => $btn.prop('disabled', false).html('<i class="fas fa-ban mr-1"></i>Confirm Rejection'));
+    });
+
+    // -----------------------------------------------------------------------
+    // PRINT
+    // Triggered by: "Print" button in View modal (Released status only)
+    // Action: loads clearances/getPrintPreview/{id}, shows in #printModal
+    // "Print Now" opens browser print dialog in a new window
+    // -----------------------------------------------------------------------
+    $(document).on('click', '.print-clearance', function () {
+        const id = $(this).data('id');
+        $.ajax({
+            url:      baseUrl + 'clearances/getPrintPreview/' + id,
+            type:     'GET',
+            dataType: 'json',
+            timeout:  8000
+        }).done(res => {
+            updateCSRF(res);
+            if (res && res.status === 'success' && res.html) {
+                $('#printPreviewContent').html(res.html);
+                $('#printModal').modal('show');
+            } else {
+                showToast('error', res?.message || 'Failed to load preview.');
+            }
+        }).fail(e => {
+            console.error('❌ Print error:', e);
+            showToast('error', 'Failed to load preview.');
         });
     });
 
-    // ── Reset modals on close ─────────────────────────────────────────────────
-    $('#addClearanceModal, #editClearanceModal').on('hidden.bs.modal', function () {
-        $(this).find('form')[0].reset();
-        $(this).find('.validation-errors').remove();
-        // Reset default date
-        const today = new Date().toISOString().split('T')[0];
-        $('#addRequestDate').val(today);
+    $('#printBtn').on('click', function () {
+        const content = $('#printPreviewContent').html();
+        const w = window.open('', '', 'width=860,height=700');
+        w.document.write(`<html><head><title>Barangay Clearance</title></head><body onload="window.print();window.close();">${content}</body></html>`);
+        w.document.close();
     });
 
-    // ── Update Stats ──────────────────────────────────────────────────────────
-    function updateStats(data) {
-        // This would require a separate stats endpoint, for now just show total
-        if (data.recordsTotal !== undefined) {
-            $('#totalClearances').text(data.recordsTotal);
-        }
-    }
-
-    // ── Fetch stats on load ───────────────────────────────────────────────────
-    function fetchStats() {
-        $.get(baseUrl + 'clearances/stats')
-            .done(function (res) {
-                if (res.status === 'success') {
-                    $('#totalClearances').text(res.data.total || 0);
-                    $('#pendingClearances').text(res.data.pending || 0);
-                    $('#approvedClearances').text(res.data.approved || 0);
-                    $('#releasedClearances').text(res.data.released || 0);
-                }
-            })
-            .fail(function () {
-                // Stats endpoint not available, that's okay
-            });
-    }
-
-    // Initialize stats
-    fetchStats();
 });

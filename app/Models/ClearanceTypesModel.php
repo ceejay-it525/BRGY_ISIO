@@ -10,7 +10,10 @@ class ClearanceTypesModel extends Model
     protected $primaryKey = 'clearance_type_id';
 
     protected $allowedFields = [
-        'type_name'
+        'type_name',
+        'description',
+        'fee',
+        'status'
     ];
 }
 

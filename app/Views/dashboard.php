@@ -16,12 +16,29 @@
                             <h1 class="topbar-title">Dashboard</h1>
                             <p class="topbar-sub">
                                 <i class="fas fa-map-marker-alt mr-1"></i>Barangay Isio &mdash;
-                              
+                                <span id="liveDateTime" class="live-clock"></span>
                             </p>
                         </div>
                     </div>
                 </div>
-
+                <div class="col-sm-5 d-flex align-items-center justify-content-end" style="gap:12px;">
+                    <button class="theme-toggle-btn" id="themeToggle" title="Toggle light / dark">
+                        <div class="tt-track">
+                            <div class="tt-thumb">
+                                <i class="fas fa-sun tt-sun"></i>
+                                <i class="fas fa-moon tt-moon"></i>
+                            </div>
+                        </div>
+                        <span class="tt-label" id="ttLabel">Dark</span>
+                    </button>
+                    <ol class="breadcrumb mb-0 topbar-bc">
+                        <li class="breadcrumb-item"><a href="<?= base_url() ?>"><i class="fas fa-home"></i></a></li>
+                        <li class="breadcrumb-item active">Dashboard</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <section class="content dash-section">
         <div class="container-fluid">
@@ -299,7 +316,7 @@ body.bmis-dark .content-wrapper { background: var(--base) !important; }
 .topbar-bc { background:transparent !important; padding:0; margin:0; }
 .topbar-bc .breadcrumb-item a, .topbar-bc .breadcrumb-item.active { color:#5a6a80; font-size:12px; }
 .topbar-bc .breadcrumb-item+.breadcrumb-item::before { color:#2d3a4a; }
-
+.live-clock { font-variant-numeric: tabular-nums; }
 
 /* ── Theme Toggle ───────────────────────────────── */
 .theme-toggle-btn {
@@ -621,7 +638,16 @@ const tipTx   = () => dark() ? '#e8f0fe' : '#0c1a2e';
 const tipSub  = () => dark() ? '#6b7a90' : '#3d4e63';
 const tipBdr  = () => dark() ? '#1f2a3c' : '#e4eaf2';
 
-
+/* ── Live Clock ──────────────────────────────── */
+(function(){
+    const el = document.getElementById('liveDateTime');
+    const t = () => {
+        const n = new Date();
+        el.textContent = n.toLocaleDateString('en-PH',{weekday:'short',year:'numeric',month:'short',day:'numeric'})
+            + ' · ' + n.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    };
+    t(); setInterval(t,1000);
+})();
 
 /* ── Counter Animation ───────────────────────── */
 document.querySelectorAll('.counter').forEach(el => {

@@ -117,14 +117,14 @@ class HouseholdsModel extends Model
     // ==============================
     public function getAssistancePriorityList(): array
     {
-        return $this->db->query(
-            "SELECT id, head_name, address_line1, purok, barangay,
-                    city_municipality, province, total_members, status, created_at
-             FROM `{$this->table}`
-             WHERE deleted_at IS NULL
-               AND status = 'Active'
-             ORDER BY total_members DESC, head_name ASC"
-        )->getResultArray();
+        return $this->db->table($this->table)
+            ->select('id, head_name, address_line1, purok, barangay, city_municipality, province, total_members, status, created_at')
+            ->where('deleted_at IS NULL')
+            ->where('status', 'Active')
+            ->orderBy('total_members', 'DESC')
+            ->orderBy('head_name', 'ASC')
+            ->get()
+            ->getResultArray();
     }
 
     // ==============================

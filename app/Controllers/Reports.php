@@ -18,49 +18,60 @@ class Reports extends BaseController
         $female_residents = $db->table('residents')->where('gender', 'Female')->where('deleted_at IS NULL')->countAllResults();
         $male_residents   = $db->table('residents')->where('gender', 'Male')->where('deleted_at IS NULL')->countAllResults();
         $total_households = $db->table('households')->where('deleted_at IS NULL')->countAllResults();
-        $total_blotter    = $db->table('blotter')->countAllResults();
-        $total_clearances = $db->table('clearances')->countAllResults();
+        $total_blotter    = $db->table('blotter')->where('deleted_at IS NULL')->countAllResults();
+        $total_clearances = $db->table('clearances')->where('deleted_at IS NULL')->countAllResults();
         $total_officials  = $db->table('barangay_officials')->where('status', 'Active')->where('deleted_at IS NULL')->countAllResults();
         $total_permits    = $db->table('permits')->where('deleted_at IS NULL')->countAllResults();
         $total_indigents  = $db->table('indigents')->where('deleted_at IS NULL')->countAllResults();
 
         // ── Residents: gender breakdown ───────────────────────────────────────
-        $residents_by_gender = $db->query(
-            "SELECT gender, COUNT(*) AS total
-             FROM residents WHERE deleted_at IS NULL
-             GROUP BY gender ORDER BY total DESC"
-        )->getResultArray();
+        $residents_by_gender = $db->table('residents')
+            ->select('gender, COUNT(*) AS total')
+            ->where('deleted_at IS NULL')
+            ->groupBy('gender')
+            ->orderBy('total', 'DESC')
+            ->get()
+            ->getResultArray();
 
         // ── Residents: civil status breakdown ────────────────────────────────
-        $residents_by_civil_status = $db->query(
-            "SELECT civil_status, COUNT(*) AS total
-             FROM residents WHERE deleted_at IS NULL
-             GROUP BY civil_status ORDER BY total DESC"
-        )->getResultArray();
+        $residents_by_civil_status = $db->table('residents')
+            ->select('civil_status, COUNT(*) AS total')
+            ->where('deleted_at IS NULL')
+            ->groupBy('civil_status')
+            ->orderBy('total', 'DESC')
+            ->get()
+            ->getResultArray();
 
         // ── Residents: status breakdown ───────────────────────────────────────
-        $residents_by_status = $db->query(
-            "SELECT status, COUNT(*) AS total
-             FROM residents WHERE deleted_at IS NULL
-             GROUP BY status ORDER BY total DESC"
-        )->getResultArray();
+        $residents_by_status = $db->table('residents')
+            ->select('status, COUNT(*) AS total')
+            ->where('deleted_at IS NULL')
+            ->groupBy('status')
+            ->orderBy('total', 'DESC')
+            ->get()
+            ->getResultArray();
 
         // ── Residents: by barangay ────────────────────────────────────────────
-        $residents_by_barangay = $db->query(
-            "SELECT barangay, COUNT(*) AS total
-             FROM residents
-             WHERE deleted_at IS NULL AND barangay IS NOT NULL AND barangay != ''
-             GROUP BY barangay ORDER BY total DESC"
-        )->getResultArray();
+        $residents_by_barangay = $db->table('residents')
+            ->select('barangay, COUNT(*) AS total')
+            ->where('deleted_at IS NULL')
+            ->where('barangay IS NOT NULL')
+            ->where('barangay !=', '')
+            ->groupBy('barangay')
+            ->orderBy('total', 'DESC')
+            ->get()
+            ->getResultArray();
 
         // ── Residents: age groups ─────────────────────────────────────────────
-        $age_row = $db->query(
-            "SELECT
-                SUM(CASE WHEN TIMESTAMPDIFF(YEAR, birthdate, CURDATE()) < 18 THEN 1 ELSE 0 END)              AS minors,
+        $age_row = $db->table('residents')
+            ->select('
+                SUM(CASE WHEN TIMESTAMPDIFF(YEAR, birthdate, CURDATE()) < 18 THEN 1 ELSE 0 END) AS minors,
                 SUM(CASE WHEN TIMESTAMPDIFF(YEAR, birthdate, CURDATE()) BETWEEN 18 AND 59 THEN 1 ELSE 0 END) AS adults,
-                SUM(CASE WHEN TIMESTAMPDIFF(YEAR, birthdate, CURDATE()) >= 60 THEN 1 ELSE 0 END)             AS seniors
-             FROM residents WHERE deleted_at IS NULL AND birthdate IS NOT NULL"
-        )->getRowArray();
+                SUM(CASE WHEN TIMESTAMPDIFF(YEAR, birthdate, CURDATE()) >= 60 THEN 1 ELSE 0 END) AS seniors')
+            ->where('deleted_at IS NULL')
+            ->where('birthdate IS NOT NULL')
+            ->get()
+            ->getRowArray();
 
         $age_groups = [
             ['label' => 'Minors (< 18)',    'total' => (int)($age_row['minors']  ?? 0)],
@@ -69,56 +80,70 @@ class Reports extends BaseController
         ];
 
         // ── Blotter: by incident type ─────────────────────────────────────────
-        $blotter_by_type = $db->query(
-            "SELECT incident_type, COUNT(*) AS total
-             FROM blotter
-             GROUP BY incident_type ORDER BY total DESC"
-        )->getResultArray();
+        $blotter_by_type = $db->table('blotter')
+            ->select('incident_type, COUNT(*) AS total')
+            ->where('deleted_at IS NULL')
+            ->groupBy('incident_type')
+            ->orderBy('total', 'DESC')
+            ->get()
+            ->getResultArray();
 
         // ── Blotter: by status ────────────────────────────────────────────────
-        $blotter_by_status = $db->query(
-            "SELECT status, COUNT(*) AS total
-             FROM blotter
-             GROUP BY status ORDER BY total DESC"
-        )->getResultArray();
+        $blotter_by_status = $db->table('blotter')
+            ->select('status, COUNT(*) AS total')
+            ->where('deleted_at IS NULL')
+            ->groupBy('status')
+            ->orderBy('total', 'DESC')
+            ->get()
+            ->getResultArray();
 
         // ── Clearances: by type ───────────────────────────────────────────────
-        $clearances_by_type = $db->query(
-            "SELECT ct.type_name, COUNT(c.clearance_id) AS total
-             FROM clearances c
-             LEFT JOIN clearance_types ct ON c.clearance_type_id = ct.clearance_type_id
-             GROUP BY ct.type_name ORDER BY total DESC"
-        )->getResultArray();
+        $clearances_by_type = $db->table('clearances c')
+            ->select('ct.type_name, COUNT(c.clearance_id) AS total')
+            ->join('clearance_types ct', 'c.clearance_type_id = ct.clearance_type_id', 'left')
+            ->where('c.deleted_at IS NULL')
+            ->groupBy('ct.type_name')
+            ->orderBy('total', 'DESC')
+            ->get()
+            ->getResultArray();
 
         // ── Clearances: by status ─────────────────────────────────────────────
-        $clearances_by_status = $db->query(
-            "SELECT status, COUNT(*) AS total
-             FROM clearances
-             GROUP BY status ORDER BY total DESC"
-        )->getResultArray();
+        $clearances_by_status = $db->table('clearances')
+            ->select('status, COUNT(*) AS total')
+            ->where('deleted_at IS NULL')
+            ->groupBy('status')
+            ->orderBy('total', 'DESC')
+            ->get()
+            ->getResultArray();
 
         // ── Permits: by status ────────────────────────────────────────────────
-        $permits_by_status = $db->query(
-            "SELECT status, COUNT(*) AS total
-             FROM permits WHERE deleted_at IS NULL
-             GROUP BY status ORDER BY total DESC"
-        )->getResultArray();
+        $permits_by_status = $db->table('permits')
+            ->select('status, COUNT(*) AS total')
+            ->where('deleted_at IS NULL')
+            ->groupBy('status')
+            ->orderBy('total', 'DESC')
+            ->get()
+            ->getResultArray();
 
         // ── Permits: by business type ─────────────────────────────────────────
-        $permits_by_type = $db->query(
-            "SELECT business_type, COUNT(*) AS total
-             FROM permits WHERE deleted_at IS NULL AND business_type IS NOT NULL
-             GROUP BY business_type ORDER BY total DESC"
-        )->getResultArray();
+        $permits_by_type = $db->table('permits')
+            ->select('business_type, COUNT(*) AS total')
+            ->where('deleted_at IS NULL')
+            ->where('business_type IS NOT NULL')
+            ->groupBy('business_type')
+            ->orderBy('total', 'DESC')
+            ->get()
+            ->getResultArray();
 
         // ── Permits: expiring within 30 days ─────────────────────────────────
-        $permits_expiring_soon = $db->query(
-            "SELECT business_name, owner_name, permit_type, expiry_date, status
-             FROM permits
-             WHERE deleted_at IS NULL
-               AND expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
-             ORDER BY expiry_date ASC"
-        )->getResultArray();
+        $permits_expiring_soon = $db->table('permits')
+            ->select('business_name, owner_name, permit_type, expiry_date, status')
+            ->where('deleted_at IS NULL')
+            ->where('expiry_date >=', 'CURDATE()', false)
+            ->where('expiry_date <=', 'DATE_ADD(CURDATE(), INTERVAL 30 DAY)', false)
+            ->orderBy('expiry_date', 'ASC')
+            ->get()
+            ->getResultArray();
 
         // ── Indigents: by category ────────────────────────────────────────────
         $indigents_by_category = $db->query(
@@ -157,32 +182,31 @@ class Reports extends BaseController
         )->getResultArray();
 
         // ── Recent activity logs ──────────────────────────────────────────────
-        $recent_logs = $db->query(
-            "SELECT USER_NAME, ACTION, DATELOG, TIMELOG, identifier
-             FROM tbl_logs
-             ORDER BY LOGID DESC LIMIT 10"
-        )->getResultArray();
+        $recent_logs = $db->table('tbl_logs')
+            ->select('USER_NAME, ACTION, DATELOG, TIMELOG, identifier')
+            ->orderBy('LOGID', 'DESC')
+            ->limit(10)
+            ->get()
+            ->getResultArray();
 
         // ── Monthly residents registered (last 6 months) ──────────────────────
-        $monthly_residents = $db->query(
-            "SELECT DATE_FORMAT(created_at, '%b %Y') AS month_label,
-                    COUNT(*) AS total
-             FROM residents
-             WHERE deleted_at IS NULL
-               AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-             GROUP BY DATE_FORMAT(created_at, '%Y-%m')
-             ORDER BY DATE_FORMAT(created_at, '%Y-%m') ASC"
-        )->getResultArray();
+        $monthly_residents = $db->table('residents')
+            ->select("DATE_FORMAT(created_at, '%b %Y') AS month_label, COUNT(*) AS total")
+            ->where('deleted_at IS NULL')
+            ->where('created_at >=', 'DATE_SUB(NOW(), INTERVAL 6 MONTH)', false)
+            ->groupBy("DATE_FORMAT(created_at, '%Y-%m')")
+            ->orderBy("DATE_FORMAT(created_at, '%Y-%m')", 'ASC')
+            ->get()
+            ->getResultArray();
 
         // ── Monthly clearances issued (last 6 months) ─────────────────────────
-        $clearances_monthly = $db->query(
-            "SELECT DATE_FORMAT(COALESCE(issued_date, created_at), '%b %Y') AS month_label,
-                    COUNT(*) AS total
-             FROM clearances
-             WHERE COALESCE(issued_date, created_at) >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-             GROUP BY DATE_FORMAT(COALESCE(issued_date, created_at), '%Y-%m')
-             ORDER BY DATE_FORMAT(COALESCE(issued_date, created_at), '%Y-%m') ASC"
-        )->getResultArray();
+        $clearances_monthly = $db->table('clearances')
+            ->select("DATE_FORMAT(COALESCE(issued_date, created_at), '%b %Y') AS month_label, COUNT(*) AS total")
+            ->where('COALESCE(issued_date, created_at) >=', 'DATE_SUB(NOW(), INTERVAL 6 MONTH)', false)
+            ->groupBy("DATE_FORMAT(COALESCE(issued_date, created_at), '%Y-%m')")
+            ->orderBy("DATE_FORMAT(COALESCE(issued_date, created_at), '%Y-%m')", 'ASC')
+            ->get()
+            ->getResultArray();
 
         // ── Chart-ready JSON strings (used directly in view <script> blocks) ──
         $chart_gender_labels  = json_encode(array_column($residents_by_gender, 'gender'));
@@ -268,6 +292,55 @@ class Reports extends BaseController
                 'adults'  => $d['age_groups'][1]['total'],
                 'seniors' => $d['age_groups'][2]['total'],
             ],
+        ]);
+    }
+
+    // ==============================
+    // FETCH RECORDS FOR DATATABLE
+    // ==============================
+    public function fetchRecords()
+    {
+        $request = service('request');
+        $draw = (int) $request->getPost('draw');
+        $start = (int) $request->getPost('start');
+        $length = (int) $request->getPost('length');
+        $search = $request->getPost('search');
+        $searchValue = $search['value'] ?? '';
+
+        $db = \Config\Database::connect();
+
+        $builder = $db->table('residents');
+        $builder->select('id, first_name, middle_name, last_name, suffix, birthdate, gender, civil_status, is_voter, voter_id, contact_number, address_line1, barangay, status');
+        $builder->where('deleted_at', null);
+
+        if (!empty($searchValue)) {
+            $builder->groupStart()
+                ->like('first_name', $searchValue)
+                ->orLike('middle_name', $searchValue)
+                ->orLike('last_name', $searchValue)
+                ->orLike('voter_id', $searchValue)
+                ->orLike('contact_number', $searchValue)
+                ->groupEnd();
+        }
+
+        $totalFiltered = $builder->countAllResults(false);
+
+        $builder->orderBy('last_name', 'ASC');
+        $builder->limit($length, $start);
+
+        $data = $builder->get()->getResultArray();
+
+        $counter = $start + 1;
+        foreach ($data as &$row) {
+            $row['row_number'] = $counter++;
+        }
+
+        return $this->response->setJSON([
+            'draw' => $draw,
+            'recordsTotal' => $db->table('residents')->where('deleted_at', null)->countAllResults(),
+            'recordsFiltered' => $totalFiltered,
+            'data' => $data,
+            'csrf_hash' => csrf_hash()
         ]);
     }
 }

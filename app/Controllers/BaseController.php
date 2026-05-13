@@ -23,7 +23,7 @@ abstract class BaseController extends Controller
      *
      * @var array
      */
-    protected $helpers = [];
+    protected $helpers = ['Helpers/menu_helper'];
 
     /**
      * Session instance (optional)

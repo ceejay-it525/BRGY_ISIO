@@ -108,6 +108,7 @@
   .modal-footer-custom .f-hint span { color: #E24B4A; }
 </style>
 
+<!-- (keep all existing page HTML unchanged up to the modals) -->
 <div class="content-wrapper">
 
   <div class="content-header">
@@ -257,7 +258,7 @@
 
           <div class="modal-section-label">Position &amp; term</div>
           <div class="row">
-            <div class="col-sm-4">
+            <div class="col-sm-6">
               <div class="form-group">
                 <label>Position <span class="req">*</span></label>
                 <select id="addPosition" name="position" class="form-control position-select" required>
@@ -273,16 +274,7 @@
                 </select>
               </div>
             </div>
-            <div class="col-sm-4" id="addPurokGroup" style="display:none;">
-              <div class="form-group">
-                <label>Purok Selection <span class="req">*</span></label>
-                <select id="addPurok" name="purok" class="form-control">
-                  <option value="">Select Purok</option>
-                  <?php for($i=1; $i<=7; $i++) echo "<option>$i</option>"; ?>
-                </select>
-              </div>
-            </div>
-            <div class="col-sm-4">
+            <div class="col-sm-6">
               <div class="form-group">
                 <label>Status</label>
                 <select name="status" class="form-control">
@@ -361,159 +353,20 @@
     </form>
   </div>
 </div>
-
-<!-- ================= EDIT MODAL ================= -->
-<div class="modal fade" id="editOfficialModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
-    <form id="editOfficialForm" enctype="multipart/form-data">
-      <?= csrf_field() ?>
-      <input type="hidden" name="id" id="editOfficialId">
-      <div class="modal-content">
-
-        <!-- Header -->
-        <div class="modal-header-custom bg-warning">
-          <div class="mh-left">
-            <div class="mh-icon"><i class="fa fa-edit"></i></div>
-            <div>
-              <p class="mh-title text-dark">Edit barangay official</p>
-              <p class="mh-sub text-dark">Modify official information</p>
-            </div>
-          </div>
-          <button type="button" class="mh-close" data-dismiss="modal">&#215;</button>
-        </div>
-
-        <div class="modal-body">
-
-          <div class="modal-section-label">Full name</div>
-          <div class="row">
-            <div class="col-sm-4">
-              <div class="form-group">
-                <label>First name <span class="req">*</span></label>
-                <input type="text" name="first_name" id="editFirstName" class="form-control" required>
-              </div>
-            </div>
-            <div class="col-sm-4">
-              <div class="form-group">
-                <label>Middle name</label>
-                <input type="text" name="middle_name" id="editMiddleName" class="form-control">
-              </div>
-            </div>
-            <div class="col-sm-4">
-              <div class="form-group">
-                <label>Last name <span class="req">*</span></label>
-                <input type="text" name="last_name" id="editLastName" class="form-control" required>
-              </div>
-            </div>
-          </div>
-
-          <div class="modal-section-label">Position &amp; term</div>
-          <div class="row">
-            <div class="col-sm-4">
-              <div class="form-group">
-                <label>Position <span class="req">*</span></label>
-                <select id="editPosition" name="position" class="form-control" required>
-                  <option>Barangay Captain</option>
-                  <option>Barangay Councilor</option>
-                  <option>SK Chairman</option>
-                  <option>SK Councilor</option>
-                  <option>Secretary</option>
-                  <option>Treasurer</option>
-                  <option>Purok President</option>
-                  <option>Kagawad</option>
-                </select>
-              </div>
-            </div>
-            <div class="col-sm-4" id="editPurokGroup" style="display:none;">
-              <div class="form-group">
-                <label>Purok Selection <span class="req">*</span></label>
-                <select id="editPurok" name="purok" class="form-control">
-                  <option value="">Select Purok</option>
-                  <?php for($i=1; $i<=7; $i++) echo "<option>$i</option>"; ?>
-                </select>
-              </div>
-            </div>
-            <div class="col-sm-4">
-              <div class="form-group">
-                <label>Status</label>
-                <select name="status" id="editStatus" class="form-control">
-                  <option>Active</option>
-                  <option>Inactive</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-sm-6">
-              <div class="form-group">
-                <label>Term start <span class="req">*</span></label>
-                <input type="date" name="term_start" id="editTermStart" class="form-control" required>
-              </div>
-            </div>
-            <div class="col-sm-6">
-              <div class="form-group">
-                <label>Term end</label>
-                <input type="date" name="term_end" id="editTermEnd" class="form-control">
-              </div>
-            </div>
-          </div>
-
-          <div class="modal-section-label">Contact &amp; address</div>
-          <div class="row">
-            <div class="col-sm-6">
-              <div class="form-group">
-                <label>Contact number</label>
-                <input type="text" name="contact_number" id="editContact" class="form-control">
-              </div>
-            </div>
-            <div class="col-sm-6">
-              <div class="form-group">
-                <label>Email address</label>
-                <input type="email" name="email" id="editEmail" class="form-control">
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-sm-8">
-              <div class="form-group">
-                <label>Home address</label>
-                <input type="text" name="address" id="editAddress" class="form-control">
-              </div>
-            </div>
-            <div class="col-sm-4">
-              <div class="form-group">
-                <label>Update Photo</label>
-                <input type="file" name="photo" class="form-control" accept="image/*">
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <div class="modal-footer-custom">
-          <span class="f-hint">Fields marked <span>*</span> are required</span>
-          <div>
-            <button type="button" class="btn btn-secondary btn-sm mr-2" data-dismiss="modal">
-              <i class="fas fa-times-circle"></i> Cancel
-            </button>
-            <button type="submit" class="btn btn-warning btn-sm">
-              <i class="fa fa-save"></i> Update official
-            </button>
-          </div>
-        </div>
-
-      </div>
-    </form>
-  </div>
-</div>
-
 <div class="toasts-top-right fixed" style="position:fixed;top:1rem;right:1rem;z-index:9999;"></div>
 
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
-    const baseUrl = "<?= base_url() ?>/";
-    const csrfTokenName = "<?= csrf_token() ?>";
+  (function() {
+    const path = window.location.pathname;
+    const basePath = window.location.origin + path.replace(/\/[^\/]+\/?$/, '/');
+    window.baseUrl = basePath;
+    const script = document.createElement('script');
+    script.src = basePath + '../js/barangay_officials/barangay_officials.js';
+    script.defer = true;
+    document.body.appendChild(script);
+  })();
 </script>
-<script src="<?= base_url('js/barangay_officials/barangay_officials.js') ?>"></script>
 <?= $this->endSection() ?>
