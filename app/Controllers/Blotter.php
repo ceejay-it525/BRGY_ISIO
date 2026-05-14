@@ -73,7 +73,7 @@ class Blotter extends BaseController
 
             'draw'            => $draw,
 
-            'recordsTotal'    => $this->blotterModel->countAllResults(false),
+            'recordsTotal'    => $result['recordsTotal'] ?? 0,
 
             'recordsFiltered' => $result['filtered'],
 

@@ -106,6 +106,8 @@ class BlotterModel extends Model
 
         $filteredRecords = $countBuilder->countAllResults();
 
+        $totalRecords = $this->db->table($this->table)->countAllResults();
+
         $builder->orderBy('id', 'DESC');
 
         $builder->limit($length, $start);
@@ -114,9 +116,11 @@ class BlotterModel extends Model
 
         return [
 
-            'data'     => $data,
+            'data'         => $data,
 
-            'filtered' => $filteredRecords,
+            'filtered'     => $filteredRecords,
+
+            'recordsTotal' => $totalRecords,
 
         ];
 

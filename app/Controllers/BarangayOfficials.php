@@ -25,7 +25,6 @@ class BarangayOfficials extends BaseController
         $draw   = (int) $request->getPost('draw');
         $start  = (int) $request->getPost('start');
         $length = (int) $request->getPost('length');
-        $search = '';
 
         $searchPost = $request->getPost('search');
         if (is_array($searchPost)) {
@@ -38,39 +37,42 @@ class BarangayOfficials extends BaseController
 
         $data = [];
         foreach ($result['data'] as $row) {
-            $row['full_name'] = trim("{$row['first_name']} {$row['middle_name']} {$row['last_name']}");
-            $photo = isset($row['photo']) ? $row['photo'] : null;
-            $row['photo_url'] = $photo
-                ? base_url("uploads/officials/{$photo}")
+            $row['full_name']         = trim("{$row['first_name']} {$row['middle_name']} {$row['last_name']}");
+            $row['photo_url']         = !empty($row['photo'])
+                ? base_url("uploads/officials/{$row['photo']}")
                 : '';
-            $row['term_end_display'] = $row['term_end'] ?: 'Present';
-            $row['status_badge'] = $row['status'] === 'Active'
+            $row['term_end_display']  = $row['term_end'] ?: 'Present';
+            $row['status_badge']      = $row['status'] === 'Active'
                 ? '<span class="badge bg-success">Active</span>'
-                : '<span class="badge bg-warning">Inactive</span>';
+                : '<span class="badge bg-warning text-dark">Inactive</span>';
             $data[] = $row;
         }
 
         return $this->response->setJSON([
-            'draw' => $draw,
-            'recordsTotal' => $this->model->countAll(),
+            'draw'            => $draw,
+            'recordsTotal'    => $this->model->countAll(),
             'recordsFiltered' => $result['filtered'],
-            'data' => $data,
-            'csrf_hash' => csrf_hash()
+            'data'            => $data,
+            'csrf_hash'       => csrf_hash(),
         ]);
     }
 
     public function save()
     {
         $photo = $this->request->getFile('photo');
-        $data = $this->request->getPost();
+        $data  = $this->request->getPost();
 
         if (!$this->validate([
             'first_name' => 'required',
             'last_name'  => 'required',
             'position'   => 'required',
-            'photo'      => 'permit_empty|mime_in[photo,image/jpg,image/jpeg,image/png,image/gif]|max_size[photo,2048]'
+            'photo'      => 'permit_empty|mime_in[photo,image/jpg,image/jpeg,image/png,image/gif]|max_size[photo,2048]',
         ])) {
-            return $this->fail('Validation failed');
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'Validation failed: ' . implode(', ', $this->validator->getErrors()),
+                'csrf_hash' => csrf_hash(),
+            ]);
         }
 
         if ($photo && $photo->isValid() && !$photo->hasMoved()) {
@@ -78,48 +80,63 @@ class BarangayOfficials extends BaseController
             if (!is_dir($destination)) {
                 mkdir($destination, 0755, true);
             }
-            $photoName = $photo->getRandomName();
+            $photoName      = $photo->getRandomName();
             $photo->move($destination, $photoName);
-            $data['photo'] = $photoName;
+            $data['photo']  = $photoName;
         }
+
+        unset($data['csrf_test_name'], $data['id']);
 
         $this->model->insert($data);
 
         return $this->response->setJSON([
             'status'    => 'success',
-            'message'   => 'Saved successfully',
-            'csrf_hash' => csrf_hash()
+            'message'   => 'Official saved successfully.',
+            'csrf_hash' => csrf_hash(),
         ]);
     }
 
-    public function get($id)
+    // GET — fetch a single record for the Edit modal
+    public function edit($id)
     {
-        $data = $this->model->find($id);
+        $record = $this->model->find($id);
 
-        if (!$data) {
-            return $this->failNotFound('Not found');
+        if (!$record) {
+            return $this->failNotFound('Official not found.');
         }
 
         return $this->response->setJSON([
             'status'    => 'success',
-            'data'      => $data,
-            'csrf_hash' => csrf_hash()
+            'data'      => $record,
+            'csrf_hash' => csrf_hash(),
         ]);
     }
 
     public function update()
     {
-        $id = $this->request->getPost('id');
+        $id    = (int) $this->request->getPost('id');
         $photo = $this->request->getFile('photo');
-        $data = $this->request->getPost();
+        $data  = $this->request->getPost();
+
+        if (!$id) {
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'Invalid ID.',
+                'csrf_hash' => csrf_hash(),
+            ]);
+        }
 
         if (!$this->validate([
             'first_name' => 'required',
             'last_name'  => 'required',
             'position'   => 'required',
-            'photo'      => 'permit_empty|mime_in[photo,image/jpg,image/jpeg,image/png,image/gif]|max_size[photo,2048]'
+            'photo'      => 'permit_empty|mime_in[photo,image/jpg,image/jpeg,image/png,image/gif]|max_size[photo,2048]',
         ])) {
-            return $this->fail('Validation failed');
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'Validation failed: ' . implode(', ', $this->validator->getErrors()),
+                'csrf_hash' => csrf_hash(),
+            ]);
         }
 
         if ($photo && $photo->isValid() && !$photo->hasMoved()) {
@@ -127,28 +144,43 @@ class BarangayOfficials extends BaseController
             if (!is_dir($destination)) {
                 mkdir($destination, 0755, true);
             }
-            $photoName = $photo->getRandomName();
+            $photoName     = $photo->getRandomName();
             $photo->move($destination, $photoName);
             $data['photo'] = $photoName;
+        } else {
+            unset($data['photo']); // keep existing photo
         }
+
+        unset($data['csrf_test_name'], $data['id']);
 
         $this->model->update($id, $data);
 
         return $this->response->setJSON([
             'status'    => 'success',
-            'message'   => 'Updated successfully',
-            'csrf_hash' => csrf_hash()
+            'message'   => 'Official updated successfully.',
+            'csrf_hash' => csrf_hash(),
         ]);
     }
 
+    // Accepts both GET and POST (JS sends $.post)
     public function delete($id)
     {
+        $id = (int) $id;
+
+        if (!$id || !$this->model->find($id)) {
+            return $this->response->setJSON([
+                'status'    => 'error',
+                'message'   => 'Official not found.',
+                'csrf_hash' => csrf_hash(),
+            ]);
+        }
+
         $this->model->delete($id);
 
         return $this->response->setJSON([
             'status'    => 'success',
-            'message'   => 'Deleted successfully',
-            'csrf_hash' => csrf_hash()
+            'message'   => 'Official deleted successfully.',
+            'csrf_hash' => csrf_hash(),
         ]);
     }
 }

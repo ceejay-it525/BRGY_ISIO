@@ -10,7 +10,6 @@
   .official-card-avatar { width:54px; height:54px; object-fit:cover; border-radius:50%; }
   .btn-light.text-primary { color: #1c5db8 !important; }
 
-  /* ── redesigned modal shared styles ── */
   .modal-content { border: none; border-radius: 12px; overflow: hidden; }
 
   .modal-header-custom {
@@ -69,7 +68,6 @@
   }
 
   .modal-body { padding: 4px 20px 16px; }
-
   .modal-body .form-group { margin-bottom: 12px; }
   .modal-body .form-group label {
     font-size: 11px; font-weight: 600;
@@ -81,6 +79,7 @@
     border: 1px solid #ced4da; border-radius: 6px;
     padding: 0 10px;
   }
+  .modal-body textarea.form-control { height: auto; padding: 8px 10px; }
   .modal-body .form-control:focus {
     border-color: #1c5db8;
     box-shadow: 0 0 0 3px rgba(28,93,184,0.1);
@@ -108,7 +107,6 @@
   .modal-footer-custom .f-hint span { color: #E24B4A; }
 </style>
 
-<!-- (keep all existing page HTML unchanged up to the modals) -->
 <div class="content-wrapper">
 
   <div class="content-header">
@@ -137,7 +135,7 @@
               <h2 class="text-white mb-1">Barangay Officials</h2>
               <p class="text-white-75 mb-0">View, search, and manage your barangay officials in one place.</p>
             </div>
-            <button type="button" class="btn btn-light btn-md text-primary" data-toggle="modal" data-target="#AddNewModal">
+            <button type="button" class="btn btn-light btn-md text-primary mt-3 mt-md-0" data-toggle="modal" data-target="#AddNewModal">
               <i class="fa fa-plus-circle"></i> Add New Official
             </button>
           </div>
@@ -153,8 +151,8 @@
                   <h3 class="card-title mb-1">Officials Directory</h3>
                   <p class="text-muted mb-0">Browse elected officials, view full details, and manage assignments.</p>
                 </div>
-                <div class="input-group" style="max-width: 420px; width: 100%;">
-                  <input id="officialsSearch" type="search" class="form-control" placeholder="Search officials..." aria-label="Search officials">
+                <div class="input-group mt-2 mt-md-0" style="max-width: 420px; width: 100%;">
+                  <input id="officialsSearch" type="search" class="form-control" placeholder="Search officials…" aria-label="Search officials">
                   <div class="input-group-append">
                     <button id="officialsSearchBtn" class="btn btn-secondary" type="button"><i class="fas fa-search"></i></button>
                   </div>
@@ -164,35 +162,38 @@
 
             <div class="card-body pt-0">
               <div class="row">
+                <!-- Detail panel -->
                 <div class="col-lg-4 mb-4">
                   <div class="card h-100 shadow-sm border-0">
                     <div class="card-body">
                       <div class="text-center mb-4">
                         <div id="selectedAvatar" class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width:110px;height:110px;font-size:28px;"></div>
-                        <h4 id="selectedName" class="mt-3 mb-1"></h4>
-                        <p id="selectedPosition" class="text-muted mb-0"></p>
+                        <h4 id="selectedName" class="mt-3 mb-1">No official selected</h4>
+                        <p id="selectedPosition" class="text-muted mb-0">Choose a card to view details.</p>
                       </div>
                       <ul class="list-group list-group-flush">
                         <li class="list-group-item px-0 d-flex justify-content-between">
-                          <span>Status</span><span id="selectedStatus" class="font-weight-bold"></span>
+                          <span>Status</span><span id="selectedStatus" class="font-weight-bold">—</span>
                         </li>
                         <li class="list-group-item px-0 d-flex justify-content-between">
-                          <span>Term</span><span id="selectedTerm" class="font-weight-bold"></span>
+                          <span>Term</span><span id="selectedTerm" class="font-weight-bold">—</span>
                         </li>
                         <li class="list-group-item px-0 d-flex justify-content-between">
-                          <span>Contact</span><span id="selectedContact"></span>
+                          <span>Contact</span><span id="selectedContact">—</span>
                         </li>
                         <li class="list-group-item px-0 d-flex justify-content-between">
-                          <span>Email</span><span id="selectedEmail"></span>
+                          <span>Email</span><span id="selectedEmail">—</span>
                         </li>
                         <li class="list-group-item px-0">
                           <strong>Address</strong>
-                          <div id="selectedAddress" class="text-muted"></div>
+                          <div id="selectedAddress" class="text-muted">—</div>
                         </li>
                       </ul>
                     </div>
                   </div>
                 </div>
+
+                <!-- Cards grid -->
                 <div class="col-lg-8">
                   <div id="officialCards" class="row g-3"></div>
                 </div>
@@ -205,6 +206,8 @@
       <input type="hidden" id="csrfTokenField" name="csrf_test_name" value="<?= csrf_hash() ?>">
 
     </div>
+  </section>
+</div>
 
 <!-- ================= ADD MODAL ================= -->
 <div class="modal fade" id="AddNewModal" tabindex="-1">
@@ -213,7 +216,6 @@
       <?= csrf_field() ?>
       <div class="modal-content">
 
-        <!-- Header -->
         <div class="modal-header-custom">
           <div class="mh-left">
             <div class="mh-icon"><i class="fa fa-user-plus"></i></div>
@@ -225,7 +227,6 @@
           <button type="button" class="mh-close" data-dismiss="modal">&#215;</button>
         </div>
 
-        <!-- Step indicators -->
         <div class="modal-steps">
           <div class="mstep active"><div class="mstep-num">1</div> Personal info</div>
           <div class="mstep"><div class="mstep-num">2</div> Position &amp; term</div>
@@ -261,13 +262,13 @@
             <div class="col-sm-6">
               <div class="form-group">
                 <label>Position <span class="req">*</span></label>
-                <select id="addPosition" name="position" class="form-control position-select" required>
+                <select id="addPosition" name="position" class="form-control" required>
                   <option value="">Select position</option>
                   <option>Barangay Captain</option>
                   <option>Barangay Councilor</option>
                   <option>Barangay Kagawad</option>
                   <option>Secretary</option>
-                   <option>Treasurer</option>
+                  <option>Treasurer</option>
                   <option>Purok President</option>
                   <option>SK Chairman</option>
                   <option>SK Kagawad</option>
@@ -287,6 +288,18 @@
               </div>
             </div>
           </div>
+
+          <!-- Purok number group (shown only when position needs it) -->
+          <div class="row" id="addPurokGroup" style="display:none!important;">
+            <div class="col-sm-12">
+              <div class="form-group">
+                <label>Purok number / name <span class="req">*</span></label>
+                <input type="text" id="addPurok" name="purok" class="form-control" placeholder="e.g. 1, 2, 7A">
+                <small class="form-text">Required for Purok President position</small>
+              </div>
+            </div>
+          </div>
+
           <div class="row">
             <div class="col-sm-6">
               <div class="form-group">
@@ -332,7 +345,7 @@
                   <input type="file" name="photo" accept="image/*">
                   <i class="fas fa-cloud-upload-alt"></i>
                   <span>Click to upload</span>
-                  <small>JPG, PNG, GIF — max 2MB</small>
+                  <small>JPG, PNG, GIF — max 2 MB</small>
                 </label>
               </div>
             </div>
@@ -356,7 +369,168 @@
     </form>
   </div>
 </div>
-<div class="toasts-top-right fixed" style="position:fixed;top:1rem;right:1rem;z-index:9999;"></div>
+
+<!-- ================= EDIT MODAL ================= -->
+<div class="modal fade" id="editOfficialModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <form id="editOfficialForm" enctype="multipart/form-data">
+      <?= csrf_field() ?>
+      <input type="hidden" id="editOfficialId" name="id">
+      <div class="modal-content">
+
+        <div class="modal-header-custom">
+          <div class="mh-left">
+            <div class="mh-icon"><i class="fa fa-user-edit"></i></div>
+            <div>
+              <p class="mh-title">Edit barangay official</p>
+              <p class="mh-sub">Update the official's information below</p>
+            </div>
+          </div>
+          <button type="button" class="mh-close" data-dismiss="modal">&#215;</button>
+        </div>
+
+        <div class="modal-steps">
+          <div class="mstep active"><div class="mstep-num">1</div> Personal info</div>
+          <div class="mstep"><div class="mstep-num">2</div> Position &amp; term</div>
+          <div class="mstep"><div class="mstep-num">3</div> Contact &amp; status</div>
+        </div>
+
+        <div class="modal-body">
+
+          <div class="modal-section-label">Full name</div>
+          <div class="row">
+            <div class="col-sm-4">
+              <div class="form-group">
+                <label>First name <span class="req">*</span></label>
+                <input type="text" id="editFirstName" name="first_name" class="form-control" required>
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="form-group">
+                <label>Middle name</label>
+                <input type="text" id="editMiddleName" name="middle_name" class="form-control">
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="form-group">
+                <label>Last name <span class="req">*</span></label>
+                <input type="text" id="editLastName" name="last_name" class="form-control" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-section-label">Position &amp; term</div>
+          <div class="row">
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label>Position <span class="req">*</span></label>
+                <select id="editPosition" name="position" class="form-control" required>
+                  <option value="">Select position</option>
+                  <option>Barangay Captain</option>
+                  <option>Barangay Councilor</option>
+                  <option>Barangay Kagawad</option>
+                  <option>Secretary</option>
+                  <option>Treasurer</option>
+                  <option>Purok President</option>
+                  <option>SK Chairman</option>
+                  <option>SK Kagawad</option>
+                  <option>SK Councilor</option>
+                  <option>SK Secretary</option>
+                  <option>SK Treasurer</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label>Status</label>
+                <select id="editStatus" name="status" class="form-control">
+                  <option>Active</option>
+                  <option>Inactive</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Purok number group (edit) -->
+          <div class="row" id="editPurokGroup" style="display:none!important;">
+            <div class="col-sm-12">
+              <div class="form-group">
+                <label>Purok number / name <span class="req">*</span></label>
+                <input type="text" id="editPurok" name="purok" class="form-control" placeholder="e.g. 1, 2, 7A">
+                <small class="form-text">Required for Purok President position</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label>Term start <span class="req">*</span></label>
+                <input type="date" id="editTermStart" name="term_start" class="form-control" required>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label>Term end</label>
+                <input type="date" id="editTermEnd" name="term_end" class="form-control">
+                <small class="form-text">Leave blank if currently serving</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-section-label">Contact &amp; address</div>
+          <div class="row">
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label>Contact number</label>
+                <input type="text" id="editContact" name="contact_number" class="form-control" placeholder="09171234567">
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label>Email address</label>
+                <input type="email" id="editEmail" name="email" class="form-control">
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-sm-8">
+              <div class="form-group">
+                <label>Home address</label>
+                <input type="text" id="editAddress" name="address" class="form-control" placeholder="Purok, Sitio, Barangay">
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="form-group">
+                <label>Replace photo</label>
+                <label class="upload-zone w-100">
+                  <input type="file" name="photo" accept="image/*">
+                  <i class="fas fa-cloud-upload-alt"></i>
+                  <span>Click to replace</span>
+                  <small>JPG, PNG, GIF — max 2 MB</small>
+                </label>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="modal-footer-custom">
+          <span class="f-hint">Fields marked <span>*</span> are required</span>
+          <div>
+            <button type="button" class="btn btn-secondary btn-sm mr-2" data-dismiss="modal">
+              <i class="fas fa-times-circle"></i> Cancel
+            </button>
+            <button type="submit" class="btn btn-warning btn-sm">
+              <i class="fa fa-save"></i> Update official
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </form>
+  </div>
+</div>
 
 <?= $this->endSection() ?>
 

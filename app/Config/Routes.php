@@ -45,17 +45,15 @@ $routes->get('residents/printView',          'Residents::printView');
 /* |--------------------------------------------------------------------------
 | BARANGAY OFFICIALS
 |--------------------------------------------------------------------------*/
-$routes->get('barangay-officials', 'BarangayOfficials::index');
-$routes->post('barangay-officials/fetchRecords', 'BarangayOfficials::fetchRecords');
-$routes->post('barangay-officials/save', 'BarangayOfficials::save');
-$routes->get('barangay-officials/get/(:num)', 'BarangayOfficials::get/$1');  // ✅ ADDED
-$routes->post('barangay-officials/update', 'BarangayOfficials::update');
-$routes->post('barangay-officials/delete/(:num)', 'BarangayOfficials::delete/$1');
-/*
-|--------------------------------------------------------------------------
-| HOUSEHOLDS
-|--------------------------------------------------------------------------
-*/
+
+$routes->get('barangay-officials',                        'BarangayOfficials::index');
+$routes->post('barangay-officials/fetchRecords',          'BarangayOfficials::fetchRecords');
+$routes->post('barangay-officials/save',                  'BarangayOfficials::save');
+$routes->get('barangay-officials/edit/(:num)',            'BarangayOfficials::edit/$1');
+$routes->post('barangay-officials/update',                'BarangayOfficials::update');
+$routes->post('barangay-officials/delete/(:num)',         'BarangayOfficials::delete/$1');
+
+
 
 
 // Households

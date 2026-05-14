@@ -356,7 +356,31 @@ $(document).ready(function () {
 
         if (!selectedBlotterRecord) { showToast('warning', 'Please select a blotter record first.'); return; }
 
-        printBlotterRecord(selectedBlotterRecord);
+        const id = selectedBlotterRecord.id;
+
+        if (!id) { showToast('error', 'Invalid record ID.'); return; }
+
+        $.get(baseUrl + 'blotter/get/' + id, function (res) {
+
+            if (res.status === 'success') {
+
+                selectedBlotterRecord = res.data;
+
+                printBlotterRecord(res.data);
+
+            } else {
+
+                showToast('error', res.message || 'Record not found.');
+
+            }
+
+            updateCSRF(res);
+
+        }, 'json').fail(function () {
+
+            showToast('error', 'Failed to load record for printing.');
+
+        });
 
     });
 
@@ -420,7 +444,35 @@ $(document).ready(function () {
 
     function clearBlotterDetails() {
 
+        selectedBlotterRecord = null;
+
+        $('#blotterTable tbody tr.selected').removeClass('selected');
+
         updateBlotterDetails(null);
+
+    }
+
+    function refreshSelectedRecord(id) {
+
+        if (!id) return;
+
+        $.get(baseUrl + 'blotter/get/' + id, function (res) {
+
+            if (res.status === 'success') {
+
+                selectedBlotterRecord = res.data;
+
+                updateBlotterDetails(res.data);
+
+            }
+
+            updateCSRF(res);
+
+        }, 'json').fail(function () {
+
+            showToast('error', 'Failed to refresh selected record.');
+
+        });
 
     }
 
@@ -592,9 +644,7 @@ $(document).ready(function () {
 
                     if (selectedBlotterRecord && selectedBlotterRecord.id == id) {
 
-                        selectedBlotterRecord.status = res.new_status;
-
-                        $('#detailStatus').html(statusBadgeHtml(res.new_status));
+                        refreshSelectedRecord(id);
 
                     }
 
@@ -814,7 +864,15 @@ $(document).ready(function () {
 
                     showToast('success', res.message);
 
+                    const editedId = $('#editBlotterId').val();
+
                     blotterTable.ajax.reload(null, false);
+
+                    if (selectedBlotterRecord && selectedBlotterRecord.id == editedId) {
+
+                        refreshSelectedRecord(editedId);
+
+                    }
 
                 } else {
 
@@ -842,57 +900,9 @@ $(document).ready(function () {
 
         if (!id) { showToast('error', 'Invalid record ID.'); return; }
 
-        const confirmDelete = function () { executeBlotterDelete(id); };
+        if (!confirm('Are you sure you want to permanently delete this blotter record? This action cannot be undone.')) return;
 
-        if (typeof Swal !== 'undefined' && Swal.fire) {
-
-            Swal.fire({
-
-                title: 'Delete Record?',
-
-                html: '<div style="text-align: center;">Are you sure you want to <strong>permanently delete</strong> this blotter record?<br><small>This action cannot be undone.</small></div>',
-
-                icon: 'warning',
-
-                showCancelButton: true,
-
-                confirmButtonColor: '#dc3545',
-
-                cancelButtonColor: '#6c757d',
-
-                confirmButtonText: '<i class="fas fa-trash mr-1"></i> Yes, Delete It',
-
-                cancelButtonText: '<i class="fas fa-times mr-1"></i> Cancel',
-
-                buttonsStyling: false,
-
-                customClass: {
-
-                    confirmButton: 'btn btn-danger btn-block mb-2',
-
-                    cancelButton: 'btn btn-secondary btn-block',
-
-                    actions: 'd-flex flex-column'
-
-                }
-
-            }).then(function (result) {
-
-                if (!result.isConfirmed) return;
-
-                confirmDelete();
-
-            });
-
-        } else {
-
-            if (confirm('Are you sure you want to permanently delete this blotter record? This action cannot be undone.')) {
-
-                confirmDelete();
-
-            }
-
-        }
+        executeBlotterDelete(id);
 
     });
 
@@ -930,6 +940,8 @@ function executeBlotterDelete(id) {
 
             selectedBlotterRecord = null;
 
+            clearBlotterDetails();
+
             blotterTable.ajax.reload(null, false);
 
             $('#viewBlotterModal').modal('hide');
@@ -956,7 +968,7 @@ function validateForm(formId) {
 
     let valid = true;
 
-    $(formId + ' .form-control[required]').each(function () {
+    $(formId).find('input[required], select[required], textarea[required]').each(function () {
 
         const field = $(this);
 
@@ -997,6 +1009,12 @@ function getCsrfData() {
 function updateCSRF(res) {
 
     if (res && res.csrf_hash) {
+
+        const tokenName = $('meta[name=csrf-name]').attr('content') || 'csrf_test_name';
+
+        $('meta[name=csrf-token]').attr('content', res.csrf_hash);
+
+        $('input[name="' + tokenName + '"]').val(res.csrf_hash);
 
         $('input[name=csrf_test_name]').val(res.csrf_hash);
 
