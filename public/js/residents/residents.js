@@ -201,11 +201,12 @@ $(document).ready(function () {
                     '</div>';
                 }
             }
-        ]
+        ],
+        // ── Load stats AFTER DataTable first draw completes ──
+        initComplete: function () {
+            loadResidentStats();
+        }
     });
-
-    // Load stats on page ready
-    loadResidentStats();
 });
 
 // ================= QUICK FILTERS =================
@@ -240,31 +241,59 @@ $(document).on('click', '.filter-pill', function () {
 
 // ================= STAT CARDS =================
 function loadResidentStats() {
-    $('#totalResidents, #statActive, #statVoters, #statGender').text('…');
+    // Show loading spinner dots while fetching
+    $('#totalResidents, #statActive, #statVoters, #statGender')
+        .html('<i class="fas fa-spinner fa-spin" style="font-size:0.9rem;color:#a0b8cc;"></i>');
 
     $.ajax({
         url:      _baseUrl + 'residents/residentStats',
         type:     'GET',
         dataType: 'json',
-        timeout:  10000,
+        timeout:  15000,
         success: function (data) {
             if (!data || typeof data !== 'object') {
-                $('#totalResidents, #statActive, #statVoters, #statGender').text('—');
+                $('#totalResidents, #statActive, #statVoters, #statGender').text('0');
                 return;
             }
-            $('#totalResidents').text(data.total_residents  != null ? data.total_residents  : 0);
-            $('#statActive').text(    data.active_residents != null ? data.active_residents : 0);
-            $('#statVoters').text(    data.total_voters     != null ? data.total_voters     : 0);
-            $('#statGender').text(
-                (data.female_residents != null ? data.female_residents : 0) + ' / ' +
-                (data.male_residents   != null ? data.male_residents   : 0)
-            );
+            var total   = parseInt(data.total_residents)  || 0;
+            var active  = parseInt(data.active_residents) || 0;
+            var voters  = parseInt(data.total_voters)     || 0;
+            var female  = parseInt(data.female_residents) || 0;
+            var male    = parseInt(data.male_residents)   || 0;
+
+            // Animate count-up for a polished feel
+            animateCount('#totalResidents', total);
+            animateCount('#statActive',     active);
+            animateCount('#statVoters',     voters);
+            // Gender stat shows F / M — no count-up, just set directly
+            $('#statGender').text(female + ' / ' + male);
         },
         error: function (xhr, status, err) {
-            console.error('Stats load failed:', status, err, xhr.responseText);
+            console.error('[residentStats] AJAX failed:', status, err);
+            console.error('Response:', xhr.responseText);
             $('#totalResidents, #statActive, #statVoters, #statGender').text('—');
+            // Uncomment below to show a toast on stats failure:
+            // showToast('warning', 'Could not load stat cards.');
         }
     });
+}
+
+// Simple count-up animation for stat numbers
+function animateCount(selector, target) {
+    var $el      = $(selector);
+    var duration = 600; // ms
+    var start    = 0;
+    var increment = target / (duration / 16);
+    var current  = start;
+
+    var timer = setInterval(function () {
+        current += increment;
+        if (current >= target) {
+            current = target;
+            clearInterval(timer);
+        }
+        $el.text(Math.floor(current).toLocaleString());
+    }, 16);
 }
 
 function refreshReportStats() { loadResidentStats(); }

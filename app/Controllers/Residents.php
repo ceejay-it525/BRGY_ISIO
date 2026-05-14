@@ -55,10 +55,8 @@ class Residents extends BaseController
     // ==============================
     public function residentStats()
     {
-        // Force JSON header immediately
-        $this->response->setHeader('Content-Type', 'application/json');
-
-        $db = \Config\Database::connect();
+        // Always force JSON content type
+        header('Content-Type: application/json');
 
         $defaults = [
             'total_residents'  => 0,
@@ -68,25 +66,29 @@ class Residents extends BaseController
             'female_residents' => 0,
         ];
 
-        // Check if deleted_at column exists
-        $hasDeletedAt = false;
         try {
-            $columns = $db->getFieldNames('residents');
-            $hasDeletedAt = in_array('deleted_at', $columns);
-        } catch (\Throwable $e) {
-            // ignore
-        }
+            $db = \Config\Database::connect();
 
-        $whereClause = $hasDeletedAt ? 'WHERE deleted_at IS NULL' : '';
+            // Safe column check — won't throw even if table doesn't exist
+            $hasDeletedAt = false;
+            try {
+                $columns      = $db->getFieldNames('residents');
+                $hasDeletedAt = is_array($columns) && in_array('deleted_at', $columns);
+            } catch (\Throwable $e) {
+                // table may not exist yet — return defaults
+                echo json_encode($defaults);
+                exit;
+            }
 
-        try {
+            $whereClause = $hasDeletedAt ? 'WHERE deleted_at IS NULL' : '';
+
             $sql = "
                 SELECT
-                    COUNT(*)                                              AS total_residents,
-                    SUM(CASE WHEN status  = 'Active' THEN 1 ELSE 0 END) AS active_residents,
-                    SUM(CASE WHEN is_voter = 1        THEN 1 ELSE 0 END) AS total_voters,
-                    SUM(CASE WHEN gender  = 'Male'   THEN 1 ELSE 0 END) AS male_residents,
-                    SUM(CASE WHEN gender  = 'Female' THEN 1 ELSE 0 END) AS female_residents
+                    COUNT(*)                                               AS total_residents,
+                    SUM(CASE WHEN status   = 'Active' THEN 1 ELSE 0 END)  AS active_residents,
+                    SUM(CASE WHEN is_voter = 1        THEN 1 ELSE 0 END)  AS total_voters,
+                    SUM(CASE WHEN gender   = 'Male'   THEN 1 ELSE 0 END)  AS male_residents,
+                    SUM(CASE WHEN gender   = 'Female' THEN 1 ELSE 0 END)  AS female_residents
                 FROM residents
                 {$whereClause}
             ";
@@ -94,20 +96,23 @@ class Residents extends BaseController
             $row = $db->query($sql)->getRowArray();
 
             if (empty($row)) {
-                return $this->response->setJSON($defaults);
+                echo json_encode($defaults);
+                exit;
             }
 
-            return $this->response->setJSON([
+            echo json_encode([
                 'total_residents'  => (int) ($row['total_residents']  ?? 0),
                 'active_residents' => (int) ($row['active_residents'] ?? 0),
                 'total_voters'     => (int) ($row['total_voters']     ?? 0),
                 'male_residents'   => (int) ($row['male_residents']   ?? 0),
                 'female_residents' => (int) ($row['female_residents'] ?? 0),
             ]);
+            exit;
 
         } catch (\Throwable $e) {
             log_message('error', '[residentStats] ' . $e->getMessage());
-            return $this->response->setJSON($defaults);
+            echo json_encode($defaults);
+            exit;
         }
     }
 
@@ -269,7 +274,6 @@ class Residents extends BaseController
                 ->groupEnd();
         }
 
-        $builder->where('deleted_at', null);
         $builder->orderBy('last_name', 'ASC');
 
         $total = $builder->countAllResults(false);
@@ -355,7 +359,6 @@ class Residents extends BaseController
 
         $builder = $this->residentsModel->builder();
         $builder->select('id, first_name, middle_name, last_name, suffix, birthdate, gender, civil_status, is_voter, voter_id, contact_number, household_id, address_line1, barangay, status');
-        $builder->where('deleted_at', null);
 
         if ($viewType === 'voter-yes') {
             $builder->where('is_voter', 1);

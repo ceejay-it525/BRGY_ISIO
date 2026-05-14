@@ -29,17 +29,19 @@ $routes->get('/', 'Home::index');
 | RESIDENTS
 |--------------------------------------------------------------------------
 */
-$routes->group('residents', function($routes) {
-    $routes->get('/', 'Residents::index');
-    $routes->post('fetchRecords', 'Residents::fetchRecords');
-    $routes->post('save', 'Residents::save');
-    $routes->get('get/(:num)', 'Residents::get/$1');
-    $routes->post('update', 'Residents::update');
-    $routes->post('delete/(:num)', 'Residents::delete/$1');
-    $routes->get('export', 'Residents::export');
-    $routes->get('printView', 'Residents::printView');
-    $routes->get('residents/residentStats', 'Residents::residentStats');
-});
+$routes->get('residents',                    'Residents::index');
+$routes->post('residents/fetchRecords',      'Residents::fetchRecords');
+$routes->get('residents/residentStats',      'Residents::residentStats');   // ← REQUIRED for stat cards
+$routes->post('residents/save',             'Residents::save');
+$routes->get('residents/get/(:num)',         'Residents::get/$1');
+$routes->post('residents/update',           'Residents::update');
+$routes->get('residents/delete/(:num)',      'Residents::delete/$1');
+$routes->post('residents/delete/(:num)',     'Residents::delete/$1');
+$routes->get('residents/lookup',             'Residents::lookup');
+$routes->get('residents/getResidentDetails/(:num)', 'Residents::getResidentDetails/$1');
+$routes->get('residents/export',             'Residents::export');
+$routes->get('residents/printView',          'Residents::printView');
+
 /* |--------------------------------------------------------------------------
 | BARANGAY OFFICIALS
 |--------------------------------------------------------------------------*/
@@ -55,18 +57,18 @@ $routes->post('barangay-officials/delete/(:num)', 'BarangayOfficials::delete/$1'
 |--------------------------------------------------------------------------
 */
 
-$routes->get('households',                'Households::index');
-$routes->post('households/fetchRecords',  'Households::fetchRecords');
-$routes->get('households/fetchStats',     'Households::fetchStats');   // <-- NEW
-$routes->post('households/save',          'Households::save');
-$routes->get('households/get/(:num)',     'Households::get/$1');
-$routes->post('households/update',        'Households::update');
-$routes->post('households/delete/(:num)', 'Households::delete/$1');
-/*
-|--------------------------------------------------------------------------
-| BLOTTER
-|--------------------------------------------------------------------------
-*/
+
+// Households
+$routes->get('households',                          'Households::index');
+$routes->post('households/fetchRecords',            'Households::fetchRecords');
+$routes->get('households/fetchStats',               'Households::fetchStats');           // ← 
+$routes->get('households/fetchAssistancePriority',  'Households::fetchAssistancePriority'); 
+$routes->post('households/save',                    'Households::save');
+$routes->get('households/get/(:num)',               'Households::get/$1');
+$routes->post('households/update',                  'Households::update');
+$routes->get('households/delete/(:num)',            'Households::delete/$1');
+$routes->post('households/delete/(:num)',           'Households::delete/$1');
+//Blotter
 $routes->get('blotter', 'Blotter::index');
 $routes->post('blotter/save', 'Blotter::save');
 $routes->get('blotter/get/(:num)', 'Blotter::get/$1');
@@ -75,12 +77,7 @@ $routes->post('blotter/update', 'Blotter::update');
 $routes->post('blotter/delete/(:num)', 'Blotter::delete/$1');
 $routes->post('blotter/fetchRecords', 'Blotter::fetchRecords');
 
-/*
-|--------------------------------------------------------------------------
-| CLEARANCES
-|--------------------------------------------------------------------------
-*/
-
+//Clearance
  $routes->get('clearances',                    'Clearances::index');
  $routes->get('clearances/pending',            'Clearances::pending');
  $routes->get('clearances/approved',           'Clearances::approved');
@@ -101,11 +98,7 @@ $routes->post('clearances/reject/(:num)',     'Clearances::reject/$1');
  $routes->get('clearances/searchResident',    'Clearances::searchResident');
 
 
-/*
-|--------------------------------------------------------------------------
-| PERMITS
-|--------------------------------------------------------------------------
-*/
+
 $routes->get('permits', 'Permits::index');
 $routes->get('permits/pending', 'Permits::pending');
 $routes->get('permits/payment', 'Permits::payment');
@@ -126,49 +119,40 @@ $routes->post('permits/markPaid/(:num)', 'Permits::markPaid/$1');
 $routes->post('permits/markActive/(:num)', 'Permits::markActive/$1');
 $routes->post('permits/printPermit/(:num)', 'Permits::printPermit/$1');
 
-/*
-|--------------------------------------------------------------------------
-| INDIGENTS - PRODUCTION READY SOCIAL ASSISTANCE SYSTEM
-|--------------------------------------------------------------------------
-*/
+//Indigents
 $routes->get('indigents',          'Indigents::index');
 $routes->get('indigents/pending',  'Indigents::pending');
 $routes->get('indigents/approved', 'Indigents::approved');
 $routes->get('indigents/released', 'Indigents::released');
 
-// AJAX: DataTable
 $routes->post('indigents/fetchRecords', 'Indigents::fetchRecords');
 
-// AJAX: Stats
+
 $routes->get('indigents/stats', 'Indigents::stats');
 
-// AJAX: CRUD
+
 $routes->post('indigents/save',            'Indigents::save');
 $routes->get('indigents/edit/(:num)',      'Indigents::edit/$1');
 $routes->get('indigents/get/(:num)',       'Indigents::get/$1');
 $routes->post('indigents/update',          'Indigents::update');
 $routes->post('indigents/delete/(:num)',   'Indigents::delete/$1');
 
-// AJAX: View (details + history)
+
 $routes->get('indigents/view/(:num)', 'Indigents::view/$1');
 
-// AJAX: Workflow
+
 $routes->post('indigents/approve/(:num)',  'Indigents::approve/$1');
 $routes->post('indigents/reject/(:num)',   'Indigents::reject/$1');
 $routes->post('indigents/complete/(:num)', 'Indigents::complete/$1');
 
-// AJAX: Resident search (Select2)
+
 $routes->get('indigents/searchResident',              'Indigents::searchResident');
 $routes->get('indigents/getResidentInfo/(:num)',       'Indigents::getResidentInfo/$1');
 
-// Print
+
 $routes->get('indigents/getPrintPreview/(:num)', 'Indigents::getPrintPreview/$1');
 
-/*
-|--------------------------------------------------------------------------
-| REPORTS
-|--------------------------------------------------------------------------
-*/
+//Reports
 $routes->get('reports', 'Reports::index');
 $routes->get('reports/reportStats', 'Reports::reportStats');
 $routes->post('reports/fetchRecords', 'Reports::fetchRecords');
@@ -205,10 +189,6 @@ $routes->group('blotter', function($routes) {
     
     // Timeline
     $routes->get('getTimeline/(:num)', 'Blotter::getTimeline/$1');
-    
-    // QR Code
-    $routes->get('generateQR/(:num)', 'Blotter::generateQR/$1');
-    $routes->get('verify/(:any)', 'Blotter::verifyQR/$1');
     
     // Hearings
     $routes->get('getHearings/(:num)', 'Blotter::getHearings/$1');

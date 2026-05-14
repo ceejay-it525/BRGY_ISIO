@@ -8,7 +8,7 @@ class Households extends BaseController
 {
     protected $householdsModel;
 
-    // ── Barangay Defaults ─────────────────────────────────────
+  
     private const BARANGAY          = 'Isio';
     private const CITY_MUNICIPALITY = 'Cauayan';
     private const PROVINCE          = 'Negros Occidental';
@@ -19,17 +19,13 @@ class Households extends BaseController
         $this->householdsModel = new HouseholdsModel();
     }
 
-    // ==============================
-    // INDEX VIEW
-    // ==============================
+    
     public function index()
     {
         return view('households/index');
     }
 
-    // ==============================
-    // FETCH DATATABLE RECORDS
-    // ==============================
+   
     public function fetchRecords()
     {
         $request = service('request');
@@ -60,23 +56,24 @@ class Households extends BaseController
         ]);
     }
 
-    // ==============================
-    // DASHBOARD STATS (AJAX)
-    // ==============================
+    
     public function fetchStats()
     {
-        $this->response->setContentType('application/json');
+       
+        header('Content-Type: application/json');
 
         try {
             $stats = $this->householdsModel->getDashboardStats();
 
-            return $this->response->setJSON([
+            echo json_encode([
                 'status'    => 'success',
                 'data'      => $stats,
                 'csrf_hash' => csrf_hash()
             ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
+            exit;
+        } catch (\Throwable $e) {
+            log_message('error', '[Households::fetchStats] ' . $e->getMessage());
+            echo json_encode([
                 'status'  => 'error',
                 'message' => $e->getMessage(),
                 'data'    => [
@@ -86,38 +83,38 @@ class Households extends BaseController
                     'assistance_priority' => 0
                 ]
             ]);
+            exit;
         }
     }
 
-    // ==============================
-    // FETCH ASSISTANCE PRIORITY LIST
-    // Active households with 5+ members
-    // ==============================
+  
     public function fetchAssistancePriority()
     {
-        $this->response->setContentType('application/json');
+        // Force JSON — prevents any HTML being returned on error
+        header('Content-Type: application/json');
 
         try {
             $list = $this->householdsModel->getAssistancePriorityList();
 
-            return $this->response->setJSON([
+            echo json_encode([
                 'status'    => 'success',
                 'data'      => $list,
                 'count'     => count($list),
                 'csrf_hash' => csrf_hash()
             ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
+            exit;
+        } catch (\Throwable $e) {
+            log_message('error', '[Households::fetchAssistancePriority] ' . $e->getMessage());
+            echo json_encode([
                 'status'  => 'error',
-                'message' => $e->getMessage(),
+                'message' => 'Failed to load assistance list: ' . $e->getMessage(),
                 'data'    => []
             ]);
+            exit;
         }
     }
 
-    // ==============================
-    // SAVE HOUSEHOLD
-    // ==============================
+  
     public function save()
     {
         $headName    = trim($this->request->getPost('head_name') ?? '');
@@ -186,9 +183,7 @@ class Households extends BaseController
         ]);
     }
 
-    // ==============================
-    // GET SINGLE HOUSEHOLD
-    // ==============================
+  
     public function get($id)
     {
         $household = $this->householdsModel->find($id);
@@ -208,9 +203,6 @@ class Households extends BaseController
         ]);
     }
 
-    // ==============================
-    // UPDATE HOUSEHOLD
-    // ==============================
     public function update()
     {
         $id          = (int) ($this->request->getPost('id') ?: 0);
@@ -288,9 +280,7 @@ class Households extends BaseController
         ]);
     }
 
-    // ==============================
-    // DELETE HOUSEHOLD
-    // ==============================
+
     public function delete($id)
     {
         $id = (int) $id;

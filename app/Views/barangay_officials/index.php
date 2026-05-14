@@ -265,12 +265,15 @@
                   <option value="">Select position</option>
                   <option>Barangay Captain</option>
                   <option>Barangay Councilor</option>
-                  <option>SK Chairman</option>
-                  <option>SK Councilor</option>
+                  <option>Barangay Kagawad</option>
                   <option>Secretary</option>
-                  <option>Treasurer</option>
+                   <option>Treasurer</option>
                   <option>Purok President</option>
-                  <option>Kagawad</option>
+                  <option>SK Chairman</option>
+                  <option>SK Kagawad</option>
+                  <option>SK Councilor</option>
+                  <option>SK Secretary</option>
+                  <option>SK Treasurer</option>
                 </select>
               </div>
             </div>

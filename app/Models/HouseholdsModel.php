@@ -81,50 +81,87 @@ class HouseholdsModel extends Model
         $db    = $this->db;
         $table = $this->table;
 
+        // Check if deleted_at column exists to avoid query errors
+        $hasDeletedAt = false;
+        try {
+            $cols         = $db->getFieldNames($table);
+            $hasDeletedAt = is_array($cols) && in_array('deleted_at', $cols);
+        } catch (\Throwable $e) {
+            // table might not exist yet
+            return [
+                'total_households'    => 0,
+                'active_households'   => 0,
+                'new_households'      => 0,
+                'assistance_priority' => 0,
+            ];
+        }
+
+        $softDeleteClause = $hasDeletedAt ? 'AND deleted_at IS NULL' : '';
+
         $total = (int) $db->query(
-            "SELECT COUNT(*) AS cnt FROM `{$table}` WHERE deleted_at IS NULL"
+            "SELECT COUNT(*) AS cnt FROM `{$table}` WHERE 1=1 {$softDeleteClause}"
         )->getRow()->cnt;
 
         $active = (int) $db->query(
-            "SELECT COUNT(*) AS cnt FROM `{$table}` WHERE deleted_at IS NULL AND status = 'Active'"
+            "SELECT COUNT(*) AS cnt FROM `{$table}` WHERE status = 'Active' {$softDeleteClause}"
         )->getRow()->cnt;
 
         $newThisMonth = (int) $db->query(
             "SELECT COUNT(*) AS cnt FROM `{$table}`
-             WHERE deleted_at IS NULL
-               AND MONTH(created_at) = MONTH(CURDATE())
-               AND YEAR(created_at)  = YEAR(CURDATE())"
+             WHERE MONTH(created_at) = MONTH(CURDATE())
+               AND YEAR(created_at)  = YEAR(CURDATE())
+               {$softDeleteClause}"
         )->getRow()->cnt;
 
-        // Assistance Priority = all Active households (no member threshold)
         $assistancePriority = (int) $db->query(
             "SELECT COUNT(*) AS cnt FROM `{$table}`
-             WHERE deleted_at IS NULL
-               AND status = 'Active'"
+             WHERE status = 'Active' {$softDeleteClause}"
         )->getRow()->cnt;
 
         return [
             'total_households'    => $total,
             'active_households'   => $active,
             'new_households'      => $newThisMonth,
-            'assistance_priority' => $assistancePriority
+            'assistance_priority' => $assistancePriority,
         ];
     }
 
     // ==============================
     // ASSISTANCE PRIORITY LIST
-    // All Active households — no member threshold
+    // Returns ALL active households, safe soft-delete aware
     // ==============================
     public function getAssistancePriorityList(): array
     {
-        return $this->db->table($this->table)
-            ->select('id, head_name, address_line1, purok, barangay, city_municipality, province, total_members, status, created_at')
-            ->where('deleted_at IS NULL')
-            ->where('status', 'Active')
-            ->orderBy('total_members', 'DESC')
-            ->orderBy('head_name', 'ASC')
-            ->get()
-            ->getResultArray();
+        $db    = $this->db;
+        $table = $this->table;
+
+        // Check if deleted_at column exists
+        $hasDeletedAt = false;
+        try {
+            $cols         = $db->getFieldNames($table);
+            $hasDeletedAt = is_array($cols) && in_array('deleted_at', $cols);
+        } catch (\Throwable $e) {
+            return [];
+        }
+
+        $builder = $db->table($table);
+        $builder->select('id, head_name, address_line1, purok, barangay, city_municipality, province, total_members, status, created_at');
+
+        if ($hasDeletedAt) {
+            $builder->where('deleted_at IS NULL');
+        }
+
+        $builder->where('status', 'Active');
+        $builder->orderBy('total_members', 'DESC');
+        $builder->orderBy('head_name', 'ASC');
+
+        $result = $builder->get();
+
+        if (!$result) {
+            return [];
+        }
+
+        return $result->getResultArray();
     }
 
     // ==============================
